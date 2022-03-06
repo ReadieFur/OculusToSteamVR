@@ -446,3 +446,6 @@ FodyWeavers.xsd
 *.sln.iml
 
 #User defined
+*.vcxproj
+*.filters
+*.sln
