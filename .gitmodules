@@ -1,0 +1,6 @@
+[submodule "src/libraries/linalg"]
+	path = src/libraries/linalg
+	url = https://github.com/sgorsten/linalg.git
+[submodule "src/libraries/openvr"]
+	path = src/libraries/openvr
+	url = https://github.com/ValveSoftware/openvr.git
