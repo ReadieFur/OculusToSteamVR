@@ -1,18 +1,18 @@
 #include "ControllerDevice.hpp"
 #include <Windows.h>
 
-ExampleDriver::ControllerDevice::ControllerDevice(std::string serial, ControllerDevice::Handedness handedness):
+OculusToSteamVR::ControllerDevice::ControllerDevice(std::string serial, ControllerDevice::Handedness handedness):
     serial_(serial),
     handedness_(handedness)
 {
 }
 
-std::string ExampleDriver::ControllerDevice::GetSerial()
+std::string OculusToSteamVR::ControllerDevice::GetSerial()
 {
     return this->serial_;
 }
 
-void ExampleDriver::ControllerDevice::Update()
+void OculusToSteamVR::ControllerDevice::Update()
 {
     if (this->device_index_ == vr::k_unTrackedDeviceIndexInvalid)
         return;
@@ -91,22 +91,22 @@ void ExampleDriver::ControllerDevice::Update()
     this->last_pose_ = pose;
 }
 
-DeviceType ExampleDriver::ControllerDevice::GetDeviceType()
+DeviceType OculusToSteamVR::ControllerDevice::GetDeviceType()
 {
     return DeviceType::CONTROLLER;
 }
 
-ExampleDriver::ControllerDevice::Handedness ExampleDriver::ControllerDevice::GetHandedness()
+OculusToSteamVR::ControllerDevice::Handedness OculusToSteamVR::ControllerDevice::GetHandedness()
 {
     return this->handedness_;
 }
 
-vr::TrackedDeviceIndex_t ExampleDriver::ControllerDevice::GetDeviceIndex()
+vr::TrackedDeviceIndex_t OculusToSteamVR::ControllerDevice::GetDeviceIndex()
 {
     return this->device_index_;
 }
 
-vr::EVRInitError ExampleDriver::ControllerDevice::Activate(uint32_t unObjectId)
+vr::EVRInitError OculusToSteamVR::ControllerDevice::Activate(uint32_t unObjectId)
 {
     this->device_index_ = unObjectId;
 
@@ -152,7 +152,7 @@ vr::EVRInitError ExampleDriver::ControllerDevice::Activate(uint32_t unObjectId)
     GetDriver()->GetProperties()->SetStringProperty(props, vr::Prop_ModelNumber_String, "example_controller");
 
     // Set up a render model path
-    GetDriver()->GetProperties()->SetStringProperty(props, vr::Prop_RenderModelName_String, "{example}example_controller");
+    GetDriver()->GetProperties()->SetStringProperty(props, vr::Prop_RenderModelName_String, "{oculus_to_steamvr}example_controller");
 
     // Give SteamVR a hint at what hand this controller is for
     if (this->handedness_ == Handedness::LEFT) {
@@ -166,12 +166,12 @@ vr::EVRInitError ExampleDriver::ControllerDevice::Activate(uint32_t unObjectId)
     }
 
     // Set controller profile
-    GetDriver()->GetProperties()->SetStringProperty(props, vr::Prop_InputProfilePath_String, "{example}/input/example_controller_bindings.json");
+    GetDriver()->GetProperties()->SetStringProperty(props, vr::Prop_InputProfilePath_String, "{oculus_to_steamvr}/input/example_controller_bindings.json");
 
     // Change the icon depending on which handedness this controller is using (ANY uses right)
     std::string controller_handedness_str = this->handedness_ == Handedness::LEFT ? "left" : "right";
-    std::string controller_ready_file = "{example}/icons/controller_ready_" + controller_handedness_str + ".png";
-    std::string controller_not_ready_file = "{example}/icons/controller_not_ready_" + controller_handedness_str + ".png";
+    std::string controller_ready_file = "{oculus_to_steamvr}/icons/controller_ready_" + controller_handedness_str + ".png";
+    std::string controller_not_ready_file = "{oculus_to_steamvr}/icons/controller_not_ready_" + controller_handedness_str + ".png";
 
     GetDriver()->GetProperties()->SetStringProperty(props, vr::Prop_NamedIconPathDeviceReady_String, controller_ready_file.c_str());
 
@@ -186,27 +186,27 @@ vr::EVRInitError ExampleDriver::ControllerDevice::Activate(uint32_t unObjectId)
     return vr::EVRInitError::VRInitError_None;
 }
 
-void ExampleDriver::ControllerDevice::Deactivate()
+void OculusToSteamVR::ControllerDevice::Deactivate()
 {
     this->device_index_ = vr::k_unTrackedDeviceIndexInvalid;
 }
 
-void ExampleDriver::ControllerDevice::EnterStandby()
+void OculusToSteamVR::ControllerDevice::EnterStandby()
 {
 }
 
-void* ExampleDriver::ControllerDevice::GetComponent(const char* pchComponentNameAndVersion)
+void* OculusToSteamVR::ControllerDevice::GetComponent(const char* pchComponentNameAndVersion)
 {
     return nullptr;
 }
 
-void ExampleDriver::ControllerDevice::DebugRequest(const char* pchRequest, char* pchResponseBuffer, uint32_t unResponseBufferSize)
+void OculusToSteamVR::ControllerDevice::DebugRequest(const char* pchRequest, char* pchResponseBuffer, uint32_t unResponseBufferSize)
 {
     if (unResponseBufferSize >= 1)
         pchResponseBuffer[0] = 0;
 }
 
-vr::DriverPose_t ExampleDriver::ControllerDevice::GetPose()
+vr::DriverPose_t OculusToSteamVR::ControllerDevice::GetPose()
 {
     return last_pose_;
 }

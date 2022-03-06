@@ -1,16 +1,16 @@
 #include "HMDDevice.hpp"
 #include <Windows.h>
 
-ExampleDriver::HMDDevice::HMDDevice(std::string serial):serial_(serial)
+OculusToSteamVR::HMDDevice::HMDDevice(std::string serial):serial_(serial)
 {
 }
 
-std::string ExampleDriver::HMDDevice::GetSerial()
+std::string OculusToSteamVR::HMDDevice::GetSerial()
 {
     return this->serial_;
 }
 
-void ExampleDriver::HMDDevice::Update()
+void OculusToSteamVR::HMDDevice::Update()
 {
     if (this->device_index_ == vr::k_unTrackedDeviceIndexInvalid)
         return;
@@ -58,17 +58,17 @@ void ExampleDriver::HMDDevice::Update()
     this->last_pose_ = pose;
 }
 
-DeviceType ExampleDriver::HMDDevice::GetDeviceType()
+DeviceType OculusToSteamVR::HMDDevice::GetDeviceType()
 {
     return DeviceType::HMD;
 }
 
-vr::TrackedDeviceIndex_t ExampleDriver::HMDDevice::GetDeviceIndex()
+vr::TrackedDeviceIndex_t OculusToSteamVR::HMDDevice::GetDeviceIndex()
 {
     return this->device_index_;
 }
 
-vr::EVRInitError ExampleDriver::HMDDevice::Activate(uint32_t unObjectId)
+vr::EVRInitError OculusToSteamVR::HMDDevice::Activate(uint32_t unObjectId)
 {
     this->device_index_ = unObjectId;
 
@@ -120,15 +120,15 @@ vr::EVRInitError ExampleDriver::HMDDevice::Activate(uint32_t unObjectId)
     GetDriver()->GetProperties()->SetStringProperty(props, vr::Prop_ModelNumber_String, "EXAMPLE_HMD_DEVICE");
 
     // Set up icon paths
-    GetDriver()->GetProperties()->SetStringProperty(props, vr::Prop_NamedIconPathDeviceReady_String, "{example}/icons/hmd_ready.png");
+    GetDriver()->GetProperties()->SetStringProperty(props, vr::Prop_NamedIconPathDeviceReady_String, "{oculus_to_steamvr}/icons/hmd_ready.png");
 
-    GetDriver()->GetProperties()->SetStringProperty(props, vr::Prop_NamedIconPathDeviceOff_String, "{example}/icons/hmd_not_ready.png");
-    GetDriver()->GetProperties()->SetStringProperty(props, vr::Prop_NamedIconPathDeviceSearching_String, "{example}/icons/hmd_not_ready.png");
-    GetDriver()->GetProperties()->SetStringProperty(props, vr::Prop_NamedIconPathDeviceSearchingAlert_String, "{example}/icons/hmd_not_ready.png");
-    GetDriver()->GetProperties()->SetStringProperty(props, vr::Prop_NamedIconPathDeviceReadyAlert_String, "{example}/icons/hmd_not_ready.png");
-    GetDriver()->GetProperties()->SetStringProperty(props, vr::Prop_NamedIconPathDeviceNotReady_String, "{example}/icons/hmd_not_ready.png");
-    GetDriver()->GetProperties()->SetStringProperty(props, vr::Prop_NamedIconPathDeviceStandby_String, "{example}/icons/hmd_not_ready.png");
-    GetDriver()->GetProperties()->SetStringProperty(props, vr::Prop_NamedIconPathDeviceAlertLow_String, "{example}/icons/hmd_not_ready.png");
+    GetDriver()->GetProperties()->SetStringProperty(props, vr::Prop_NamedIconPathDeviceOff_String, "{oculus_to_steamvr}/icons/hmd_not_ready.png");
+    GetDriver()->GetProperties()->SetStringProperty(props, vr::Prop_NamedIconPathDeviceSearching_String, "{oculus_to_steamvr}/icons/hmd_not_ready.png");
+    GetDriver()->GetProperties()->SetStringProperty(props, vr::Prop_NamedIconPathDeviceSearchingAlert_String, "{oculus_to_steamvr}/icons/hmd_not_ready.png");
+    GetDriver()->GetProperties()->SetStringProperty(props, vr::Prop_NamedIconPathDeviceReadyAlert_String, "{oculus_to_steamvr}/icons/hmd_not_ready.png");
+    GetDriver()->GetProperties()->SetStringProperty(props, vr::Prop_NamedIconPathDeviceNotReady_String, "{oculus_to_steamvr}/icons/hmd_not_ready.png");
+    GetDriver()->GetProperties()->SetStringProperty(props, vr::Prop_NamedIconPathDeviceStandby_String, "{oculus_to_steamvr}/icons/hmd_not_ready.png");
+    GetDriver()->GetProperties()->SetStringProperty(props, vr::Prop_NamedIconPathDeviceAlertLow_String, "{oculus_to_steamvr}/icons/hmd_not_ready.png");
 
     
 
@@ -136,16 +136,16 @@ vr::EVRInitError ExampleDriver::HMDDevice::Activate(uint32_t unObjectId)
     return vr::EVRInitError::VRInitError_None;
 }
 
-void ExampleDriver::HMDDevice::Deactivate()
+void OculusToSteamVR::HMDDevice::Deactivate()
 {
     this->device_index_ = vr::k_unTrackedDeviceIndexInvalid;
 }
 
-void ExampleDriver::HMDDevice::EnterStandby()
+void OculusToSteamVR::HMDDevice::EnterStandby()
 {
 }
 
-void* ExampleDriver::HMDDevice::GetComponent(const char* pchComponentNameAndVersion)
+void* OculusToSteamVR::HMDDevice::GetComponent(const char* pchComponentNameAndVersion)
 {
     if (!_stricmp(pchComponentNameAndVersion, vr::IVRDisplayComponent_Version)) {
         return static_cast<vr::IVRDisplayComponent*>(this);
@@ -153,18 +153,18 @@ void* ExampleDriver::HMDDevice::GetComponent(const char* pchComponentNameAndVers
     return nullptr;
 }
 
-void ExampleDriver::HMDDevice::DebugRequest(const char* pchRequest, char* pchResponseBuffer, uint32_t unResponseBufferSize)
+void OculusToSteamVR::HMDDevice::DebugRequest(const char* pchRequest, char* pchResponseBuffer, uint32_t unResponseBufferSize)
 {
     if (unResponseBufferSize >= 1)
         pchResponseBuffer[0] = 0;
 }
 
-vr::DriverPose_t ExampleDriver::HMDDevice::GetPose()
+vr::DriverPose_t OculusToSteamVR::HMDDevice::GetPose()
 {
     return this->last_pose_;
 }
 
-void ExampleDriver::HMDDevice::GetWindowBounds(int32_t* pnX, int32_t* pnY, uint32_t* pnWidth, uint32_t* pnHeight)
+void OculusToSteamVR::HMDDevice::GetWindowBounds(int32_t* pnX, int32_t* pnY, uint32_t* pnWidth, uint32_t* pnHeight)
 {
     *pnX = this->window_x_;
     *pnY = this->window_y_;
@@ -172,23 +172,23 @@ void ExampleDriver::HMDDevice::GetWindowBounds(int32_t* pnX, int32_t* pnY, uint3
     *pnHeight = this->window_height_;
 }
 
-bool ExampleDriver::HMDDevice::IsDisplayOnDesktop()
+bool OculusToSteamVR::HMDDevice::IsDisplayOnDesktop()
 {
     return true;
 }
 
-bool ExampleDriver::HMDDevice::IsDisplayRealDisplay()
+bool OculusToSteamVR::HMDDevice::IsDisplayRealDisplay()
 {
     return false;
 }
 
-void ExampleDriver::HMDDevice::GetRecommendedRenderTargetSize(uint32_t* pnWidth, uint32_t* pnHeight)
+void OculusToSteamVR::HMDDevice::GetRecommendedRenderTargetSize(uint32_t* pnWidth, uint32_t* pnHeight)
 {
     *pnWidth = this->window_width_;
     *pnHeight = this->window_height_;
 }
 
-void ExampleDriver::HMDDevice::GetEyeOutputViewport(vr::EVREye eEye, uint32_t* pnX, uint32_t* pnY, uint32_t* pnWidth, uint32_t* pnHeight)
+void OculusToSteamVR::HMDDevice::GetEyeOutputViewport(vr::EVREye eEye, uint32_t* pnX, uint32_t* pnY, uint32_t* pnWidth, uint32_t* pnHeight)
 {
     *pnY = 0;
     *pnWidth = this->window_width_ / 2;
@@ -202,7 +202,7 @@ void ExampleDriver::HMDDevice::GetEyeOutputViewport(vr::EVREye eEye, uint32_t* p
     }
 }
 
-void ExampleDriver::HMDDevice::GetProjectionRaw(vr::EVREye eEye, float* pfLeft, float* pfRight, float* pfTop, float* pfBottom)
+void OculusToSteamVR::HMDDevice::GetProjectionRaw(vr::EVREye eEye, float* pfLeft, float* pfRight, float* pfTop, float* pfBottom)
 {
     *pfLeft = -1;
     *pfRight = 1;
@@ -210,7 +210,7 @@ void ExampleDriver::HMDDevice::GetProjectionRaw(vr::EVREye eEye, float* pfLeft, 
     *pfBottom = 1;
 }
 
-vr::DistortionCoordinates_t ExampleDriver::HMDDevice::ComputeDistortion(vr::EVREye eEye, float fU, float fV)
+vr::DistortionCoordinates_t OculusToSteamVR::HMDDevice::ComputeDistortion(vr::EVREye eEye, float fU, float fV)
 {
     vr::DistortionCoordinates_t coordinates;
     coordinates.rfBlue[0] = fU;

@@ -1,17 +1,17 @@
 #include "TrackerDevice.hpp"
 #include <Windows.h>
 
-ExampleDriver::TrackerDevice::TrackerDevice(std::string serial):
+OculusToSteamVR::TrackerDevice::TrackerDevice(std::string serial):
     serial_(serial)
 {
 }
 
-std::string ExampleDriver::TrackerDevice::GetSerial()
+std::string OculusToSteamVR::TrackerDevice::GetSerial()
 {
     return this->serial_;
 }
 
-void ExampleDriver::TrackerDevice::Update()
+void OculusToSteamVR::TrackerDevice::Update()
 {
     if (this->device_index_ == vr::k_unTrackedDeviceIndexInvalid)
         return;
@@ -76,17 +76,17 @@ void ExampleDriver::TrackerDevice::Update()
     this->last_pose_ = pose;
 }
 
-DeviceType ExampleDriver::TrackerDevice::GetDeviceType()
+DeviceType OculusToSteamVR::TrackerDevice::GetDeviceType()
 {
     return DeviceType::TRACKER;
 }
 
-vr::TrackedDeviceIndex_t ExampleDriver::TrackerDevice::GetDeviceIndex()
+vr::TrackedDeviceIndex_t OculusToSteamVR::TrackerDevice::GetDeviceIndex()
 {
     return this->device_index_;
 }
 
-vr::EVRInitError ExampleDriver::TrackerDevice::Activate(uint32_t unObjectId)
+vr::EVRInitError OculusToSteamVR::TrackerDevice::Activate(uint32_t unObjectId)
 {
     this->device_index_ = unObjectId;
 
@@ -114,43 +114,43 @@ vr::EVRInitError ExampleDriver::TrackerDevice::Activate(uint32_t unObjectId)
     GetDriver()->GetProperties()->SetStringProperty(props, vr::Prop_RenderModelName_String, "vr_controller_05_wireless_b");
 
     // Set controller profile
-    GetDriver()->GetProperties()->SetStringProperty(props, vr::Prop_InputProfilePath_String, "{example}/input/example_tracker_bindings.json");
+    GetDriver()->GetProperties()->SetStringProperty(props, vr::Prop_InputProfilePath_String, "{oculus_to_steamvr}/input/example_tracker_bindings.json");
 
     // Set the icon
-    GetDriver()->GetProperties()->SetStringProperty(props, vr::Prop_NamedIconPathDeviceReady_String, "{example}/icons/tracker_ready.png");
+    GetDriver()->GetProperties()->SetStringProperty(props, vr::Prop_NamedIconPathDeviceReady_String, "{oculus_to_steamvr}/icons/tracker_ready.png");
 
-    GetDriver()->GetProperties()->SetStringProperty(props, vr::Prop_NamedIconPathDeviceOff_String, "{example}/icons/tracker_not_ready.png");
-    GetDriver()->GetProperties()->SetStringProperty(props, vr::Prop_NamedIconPathDeviceSearching_String, "{example}/icons/tracker_not_ready.png");
-    GetDriver()->GetProperties()->SetStringProperty(props, vr::Prop_NamedIconPathDeviceSearchingAlert_String, "{example}/icons/tracker_not_ready.png");
-    GetDriver()->GetProperties()->SetStringProperty(props, vr::Prop_NamedIconPathDeviceReadyAlert_String, "{example}/icons/tracker_not_ready.png");
-    GetDriver()->GetProperties()->SetStringProperty(props, vr::Prop_NamedIconPathDeviceNotReady_String, "{example}/icons/tracker_not_ready.png");
-    GetDriver()->GetProperties()->SetStringProperty(props, vr::Prop_NamedIconPathDeviceStandby_String, "{example}/icons/tracker_not_ready.png");
-    GetDriver()->GetProperties()->SetStringProperty(props, vr::Prop_NamedIconPathDeviceAlertLow_String, "{example}/icons/tracker_not_ready.png");
+    GetDriver()->GetProperties()->SetStringProperty(props, vr::Prop_NamedIconPathDeviceOff_String, "{oculus_to_steamvr}/icons/tracker_not_ready.png");
+    GetDriver()->GetProperties()->SetStringProperty(props, vr::Prop_NamedIconPathDeviceSearching_String, "{oculus_to_steamvr}/icons/tracker_not_ready.png");
+    GetDriver()->GetProperties()->SetStringProperty(props, vr::Prop_NamedIconPathDeviceSearchingAlert_String, "{oculus_to_steamvr}/icons/tracker_not_ready.png");
+    GetDriver()->GetProperties()->SetStringProperty(props, vr::Prop_NamedIconPathDeviceReadyAlert_String, "{oculus_to_steamvr}/icons/tracker_not_ready.png");
+    GetDriver()->GetProperties()->SetStringProperty(props, vr::Prop_NamedIconPathDeviceNotReady_String, "{oculus_to_steamvr}/icons/tracker_not_ready.png");
+    GetDriver()->GetProperties()->SetStringProperty(props, vr::Prop_NamedIconPathDeviceStandby_String, "{oculus_to_steamvr}/icons/tracker_not_ready.png");
+    GetDriver()->GetProperties()->SetStringProperty(props, vr::Prop_NamedIconPathDeviceAlertLow_String, "{oculus_to_steamvr}/icons/tracker_not_ready.png");
 
     return vr::EVRInitError::VRInitError_None;
 }
 
-void ExampleDriver::TrackerDevice::Deactivate()
+void OculusToSteamVR::TrackerDevice::Deactivate()
 {
     this->device_index_ = vr::k_unTrackedDeviceIndexInvalid;
 }
 
-void ExampleDriver::TrackerDevice::EnterStandby()
+void OculusToSteamVR::TrackerDevice::EnterStandby()
 {
 }
 
-void* ExampleDriver::TrackerDevice::GetComponent(const char* pchComponentNameAndVersion)
+void* OculusToSteamVR::TrackerDevice::GetComponent(const char* pchComponentNameAndVersion)
 {
     return nullptr;
 }
 
-void ExampleDriver::TrackerDevice::DebugRequest(const char* pchRequest, char* pchResponseBuffer, uint32_t unResponseBufferSize)
+void OculusToSteamVR::TrackerDevice::DebugRequest(const char* pchRequest, char* pchResponseBuffer, uint32_t unResponseBufferSize)
 {
     if (unResponseBufferSize >= 1)
         pchResponseBuffer[0] = 0;
 }
 
-vr::DriverPose_t ExampleDriver::TrackerDevice::GetPose()
+vr::DriverPose_t OculusToSteamVR::TrackerDevice::GetPose()
 {
     return last_pose_;
 }

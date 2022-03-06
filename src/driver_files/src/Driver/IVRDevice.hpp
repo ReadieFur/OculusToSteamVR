@@ -4,7 +4,7 @@
 #include <openvr_driver.h>
 #include <Driver/DeviceType.hpp>
 
-namespace ExampleDriver {
+namespace OculusToSteamVR {
 
     class IVRDevice : public vr::ITrackedDeviceServerDriver {
     public:
