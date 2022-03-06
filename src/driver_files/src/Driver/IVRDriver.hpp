@@ -5,12 +5,17 @@
 
 #include <Driver/IVRDevice.hpp>
 
+#include <OVR_CAPI.h>
+#include <OVR_Math.h>
+
 namespace OculusToSteamVR {
 
     typedef std::variant<std::monostate, std::string, int, float, bool> SettingsValue;
 
     class IVRDriver : protected vr::IServerTrackedDeviceProvider {
     public:
+        ovrSession oculusVRSession;
+        ovrPosef offset;
 
         /// <summary>
         /// Returns all devices being managed by this driver

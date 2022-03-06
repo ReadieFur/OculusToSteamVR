@@ -24,69 +24,122 @@ void OculusToSteamVR::ControllerDevice::Update()
         //if (event.trackedDeviceIndex == this->device_index_) {
         if (event.eventType == vr::EVREventType::VREvent_Input_HapticVibration) {
             if (event.data.hapticVibration.componentHandle == this->haptic_component_) {
-                this->did_vibrate_ = true;
+                this->did_identify_ = true;
             }
         }
         //}
     }
 
-    // Check if we need to keep vibrating
-    if (this->did_vibrate_) {
-        this->vibrate_anim_state_ += (GetDriver()->GetLastFrameTime().count()/1000.f);
-        if (this->vibrate_anim_state_ > 1.0f) {
-            this->did_vibrate_ = false;
-            this->vibrate_anim_state_ = 0.0f;
+    const int controllerIndex = this->handedness_ == Handedness::LEFT ? 0 : 1;
+    const ovrSession oculusVRSession = GetDriver()->oculusVRSession;
+    ovrTrackingState oculusVRTrackingState = ovr_GetTrackingState(oculusVRSession, ovr_GetPredictedDisplayTime(oculusVRSession, 0), ovrTrue);
+
+    if (this->handedness_ == Handedness::ANY)
+    {
+        auto pose = this->last_pose_;
+        if (oculusVRTrackingState.StatusFlags & ovrStatus_PositionTracked)
+        {
+            pose.vecPosition[0] = oculusVRTrackingState.HeadPose.ThePose.Position.x;
+            pose.vecPosition[1] = oculusVRTrackingState.HeadPose.ThePose.Position.y;
+            pose.vecPosition[2] = oculusVRTrackingState.HeadPose.ThePose.Position.z;
+        }
+        GetDriver()->GetDriverHost()->TrackedDevicePoseUpdated(this->device_index_, pose, sizeof(vr::DriverPose_t));
+        this->last_pose_ = pose;
+        return;
+    }
+
+    //Check if we need to keep calibrating.
+    if (this->did_identify_)
+    {
+        this->identify_anim_state_ += (GetDriver()->GetLastFrameTime().count() / 1000.f);
+        if (this->identify_anim_state_ > 1.0f)
+        {
+            ovrPosef averageOffset = this->calibrationSampleData;
+            if (this->calibrationSamples != 0)
+            {
+                averageOffset.Position.x = averageOffset.Position.x != 0 ? averageOffset.Position.x / this->calibrationSamples : 0;
+                averageOffset.Position.y = averageOffset.Position.y != 0 ? averageOffset.Position.y / this->calibrationSamples : 0;
+                averageOffset.Position.z = averageOffset.Position.z != 0 ? averageOffset.Position.z / this->calibrationSamples : 0;
+                averageOffset.Orientation.w = averageOffset.Orientation.w != 0 ? averageOffset.Orientation.w / this->calibrationSamples : 0;
+                averageOffset.Orientation.x = averageOffset.Orientation.x != 0 ? averageOffset.Orientation.x / this->calibrationSamples : 0;
+                averageOffset.Orientation.y = averageOffset.Orientation.y != 0 ? averageOffset.Orientation.y / this->calibrationSamples : 0;
+                averageOffset.Orientation.z = averageOffset.Orientation.z != 0 ? averageOffset.Orientation.z / this->calibrationSamples : 0;
+            }
+            else
+            {
+                averageOffset.Position.x =
+                    averageOffset.Position.y =
+                    averageOffset.Position.z =
+                    averageOffset.Orientation.w =
+                    averageOffset.Orientation.x =
+                    averageOffset.Orientation.y =
+                    averageOffset.Orientation.z =
+                    0;
+            }
+
+            GetDriver()->offset = averageOffset;
+            GetDriver()->Log(
+                "Offset: x=" + std::to_string(averageOffset.Position.x) +
+                " y=" + std::to_string(averageOffset.Position.y) +
+                " z=" + std::to_string(averageOffset.Position.z)
+            );
+
+            this->did_identify_ = false;
+            this->identify_anim_state_ = 0.0f;
+            this->calibrationSamples = 0;
+            this->calibrationSampleData.Position.x =
+                this->calibrationSampleData.Position.y =
+                this->calibrationSampleData.Position.z =
+                this->calibrationSampleData.Orientation.w =
+                this->calibrationSampleData.Orientation.x =
+                this->calibrationSampleData.Orientation.y =
+                this->calibrationSampleData.Orientation.z =
+                0;
+        }
+        else
+        {
+            if (oculusVRTrackingState.HandStatusFlags[controllerIndex] & ovrStatus_PositionTracked)
+            {
+                this->calibrationSamples++;
+                this->calibrationSampleData.Position.x += oculusVRTrackingState.HandPoses[controllerIndex].ThePose.Position.x;
+                this->calibrationSampleData.Position.y += oculusVRTrackingState.HandPoses[controllerIndex].ThePose.Position.y;
+                this->calibrationSampleData.Position.z += oculusVRTrackingState.HandPoses[controllerIndex].ThePose.Position.z;
+                this->calibrationSampleData.Orientation.w += oculusVRTrackingState.HandPoses[controllerIndex].ThePose.Orientation.w;
+                this->calibrationSampleData.Orientation.x += oculusVRTrackingState.HandPoses[controllerIndex].ThePose.Orientation.x;
+                this->calibrationSampleData.Orientation.y += oculusVRTrackingState.HandPoses[controllerIndex].ThePose.Orientation.y;
+                this->calibrationSampleData.Orientation.z += oculusVRTrackingState.HandPoses[controllerIndex].ThePose.Orientation.z;
+            }
         }
     }
 
-    // Setup pose for this frame
-    auto pose = IVRDevice::MakeDefaultPose();
+    //Update the pose for this frame.
+    auto pose = this->last_pose_;
+    const ovrPosef offset = GetDriver()->offset;
+    if (oculusVRTrackingState.HandStatusFlags[controllerIndex] & ovrStatus_PositionTracked)
+    {
+        pose.vecPosition[0] = oculusVRTrackingState.HandPoses[controllerIndex].ThePose.Position.x - offset.Position.x;
+        pose.vecPosition[1] = oculusVRTrackingState.HandPoses[controllerIndex].ThePose.Position.y - offset.Position.y;
+        pose.vecPosition[2] = oculusVRTrackingState.HandPoses[controllerIndex].ThePose.Position.z - offset.Position.z;
 
-    // Find a HMD
-    auto devices = GetDriver()->GetDevices();
-    auto hmd = std::find_if(devices.begin(), devices.end(), [](const std::shared_ptr<IVRDevice>& device_ptr) {return device_ptr->GetDeviceType() == DeviceType::HMD; });
-    if (hmd != devices.end()) {
-        // Found a HMD
-        vr::DriverPose_t hmd_pose = (*hmd)->GetPose();
-
-        // Here we setup some transforms so our controllers are offset from the headset by a small amount so we can see them
-        linalg::vec<float, 3> hmd_position{ (float)hmd_pose.vecPosition[0], (float)hmd_pose.vecPosition[1], (float)hmd_pose.vecPosition[2] };
-        linalg::vec<float, 4> hmd_rotation{ (float)hmd_pose.qRotation.x, (float)hmd_pose.qRotation.y, (float)hmd_pose.qRotation.z, (float)hmd_pose.qRotation.w };
-
-        // Do shaking animation if haptic vibration was requested
-        float controller_y = -0.2f + 0.01f * std::sinf(8 * 3.1415f * vibrate_anim_state_);
-
-        // Left hand controller on the left, right hand controller on the right, any other handedness sticks to the middle
-        float controller_x = this->handedness_ == Handedness::LEFT ? -0.2f : (this->handedness_ == Handedness::RIGHT ? 0.2f : 0.f);
-
-        linalg::vec<float, 3> hmd_pose_offset = { controller_x, controller_y, -0.5f };
-
-        hmd_pose_offset = linalg::qrot(hmd_rotation, hmd_pose_offset);
-
-        linalg::vec<float, 3> final_pose = hmd_pose_offset + hmd_position;
-
-        pose.vecPosition[0] = final_pose.x;
-        pose.vecPosition[1] = final_pose.y;
-        pose.vecPosition[2] = final_pose.z;
-
-        pose.qRotation.w = hmd_rotation.w;
-        pose.qRotation.x = hmd_rotation.x;
-        pose.qRotation.y = hmd_rotation.y;
-        pose.qRotation.z = hmd_rotation.z;
+        /*GetDriver()->Log(
+            "Oculus: x=" + std::to_string(oculusVRTrackingState.HandPoses[controllerIndex].ThePose.Position.x) +
+            " y=" + std::to_string(oculusVRTrackingState.HandPoses[controllerIndex].ThePose.Position.y) +
+            " z=" + std::to_string(oculusVRTrackingState.HandPoses[controllerIndex].ThePose.Position.z) +
+            " With offset: x=" + std::to_string(pose.vecPosition[0]) +
+            " y=" + std::to_string(pose.vecPosition[1]) +
+            " z=" + std::to_string(pose.vecPosition[2])
+        );*/
     }
 
-    // Check if we need to press any buttons (I am only hooking up the A button here but the process is the same for the others)
-    // You will still need to go into the games button bindings and hook up each one (ie. a to left click, b to right click, etc.) for them to work properly
-    if (GetAsyncKeyState(0x45 /* E */) != 0) {
-        GetDriver()->GetInput()->UpdateBooleanComponent(this->a_button_click_component_, true, 0);
-        GetDriver()->GetInput()->UpdateBooleanComponent(this->a_button_touch_component_, true, 0);
-    }
-    else {
-        GetDriver()->GetInput()->UpdateBooleanComponent(this->a_button_click_component_, false, 0);
-        GetDriver()->GetInput()->UpdateBooleanComponent(this->a_button_touch_component_, false, 0);
+    if (oculusVRTrackingState.HandStatusFlags[controllerIndex] & ovrStatus_OrientationTracked)
+    {
+        pose.qRotation.w = oculusVRTrackingState.HandPoses[controllerIndex].ThePose.Orientation.w;
+        pose.qRotation.x = oculusVRTrackingState.HandPoses[controllerIndex].ThePose.Orientation.x;
+        pose.qRotation.y = oculusVRTrackingState.HandPoses[controllerIndex].ThePose.Orientation.y;
+        pose.qRotation.z = oculusVRTrackingState.HandPoses[controllerIndex].ThePose.Orientation.z;
     }
 
-    // Post pose
+    //Post pose.
     GetDriver()->GetDriverHost()->TrackedDevicePoseUpdated(this->device_index_, pose, sizeof(vr::DriverPose_t));
     this->last_pose_ = pose;
 }
@@ -115,36 +168,39 @@ vr::EVRInitError OculusToSteamVR::ControllerDevice::Activate(uint32_t unObjectId
     // Get the properties handle
     auto props = GetDriver()->GetProperties()->TrackedDeviceToPropertyContainer(this->device_index_);
 
-    // Setup inputs and outputs
-    GetDriver()->GetInput()->CreateHapticComponent(props, "/output/haptic", &this->haptic_component_);
+    if (this->handedness_ != Handedness::ANY)
+    {
+        // Setup inputs and outputs
+        GetDriver()->GetInput()->CreateHapticComponent(props, "/output/haptic", &this->haptic_component_);
 
-    GetDriver()->GetInput()->CreateBooleanComponent(props, "/input/a/click", &this->a_button_click_component_);
-    GetDriver()->GetInput()->CreateBooleanComponent(props, "/input/a/touch", &this->a_button_touch_component_);
+        GetDriver()->GetInput()->CreateBooleanComponent(props, "/input/a/click", &this->a_button_click_component_);
+        GetDriver()->GetInput()->CreateBooleanComponent(props, "/input/a/touch", &this->a_button_touch_component_);
 
-    GetDriver()->GetInput()->CreateBooleanComponent(props, "/input/b/click", &this->b_button_click_component_);
-    GetDriver()->GetInput()->CreateBooleanComponent(props, "/input/b/touch", &this->b_button_touch_component_);
+        GetDriver()->GetInput()->CreateBooleanComponent(props, "/input/b/click", &this->b_button_click_component_);
+        GetDriver()->GetInput()->CreateBooleanComponent(props, "/input/b/touch", &this->b_button_touch_component_);
 
-    GetDriver()->GetInput()->CreateBooleanComponent(props, "/input/trigger/click", &this->trigger_click_component_);
-    GetDriver()->GetInput()->CreateBooleanComponent(props, "/input/trigger/touch", &this->trigger_touch_component_);
-    GetDriver()->GetInput()->CreateScalarComponent(props, "/input/trigger/value", &this->trigger_value_component_, vr::EVRScalarType::VRScalarType_Absolute, vr::EVRScalarUnits::VRScalarUnits_NormalizedOneSided);
+        GetDriver()->GetInput()->CreateBooleanComponent(props, "/input/trigger/click", &this->trigger_click_component_);
+        GetDriver()->GetInput()->CreateBooleanComponent(props, "/input/trigger/touch", &this->trigger_touch_component_);
+        GetDriver()->GetInput()->CreateScalarComponent(props, "/input/trigger/value", &this->trigger_value_component_, vr::EVRScalarType::VRScalarType_Absolute, vr::EVRScalarUnits::VRScalarUnits_NormalizedOneSided);
 
-    GetDriver()->GetInput()->CreateBooleanComponent(props, "/input/grip/touch", &this->grip_touch_component_);
-    GetDriver()->GetInput()->CreateScalarComponent(props, "/input/grip/value", &this->grip_value_component_, vr::EVRScalarType::VRScalarType_Absolute, vr::EVRScalarUnits::VRScalarUnits_NormalizedOneSided);
-    GetDriver()->GetInput()->CreateScalarComponent(props, "/input/grip/force", &this->grip_force_component_, vr::EVRScalarType::VRScalarType_Absolute, vr::EVRScalarUnits::VRScalarUnits_NormalizedOneSided);
+        GetDriver()->GetInput()->CreateBooleanComponent(props, "/input/grip/touch", &this->grip_touch_component_);
+        GetDriver()->GetInput()->CreateScalarComponent(props, "/input/grip/value", &this->grip_value_component_, vr::EVRScalarType::VRScalarType_Absolute, vr::EVRScalarUnits::VRScalarUnits_NormalizedOneSided);
+        GetDriver()->GetInput()->CreateScalarComponent(props, "/input/grip/force", &this->grip_force_component_, vr::EVRScalarType::VRScalarType_Absolute, vr::EVRScalarUnits::VRScalarUnits_NormalizedOneSided);
 
-    GetDriver()->GetInput()->CreateBooleanComponent(props, "/input/system/click", &this->system_click_component_);
-    GetDriver()->GetInput()->CreateBooleanComponent(props, "/input/system/touch", &this->system_touch_component_);
+        GetDriver()->GetInput()->CreateBooleanComponent(props, "/input/system/click", &this->system_click_component_);
+        GetDriver()->GetInput()->CreateBooleanComponent(props, "/input/system/touch", &this->system_touch_component_);
 
-    GetDriver()->GetInput()->CreateBooleanComponent(props, "/input/trackpad/click", &this->trackpad_click_component_);
-    GetDriver()->GetInput()->CreateBooleanComponent(props, "/input/trackpad/touch", &this->trackpad_touch_component_); 
-    GetDriver()->GetInput()->CreateScalarComponent(props, "/input/trackpad/x", &this->trackpad_x_component_, vr::EVRScalarType::VRScalarType_Absolute, vr::EVRScalarUnits::VRScalarUnits_NormalizedTwoSided);
-    GetDriver()->GetInput()->CreateScalarComponent(props, "/input/trackpad/y", &this->trackpad_y_component_, vr::EVRScalarType::VRScalarType_Absolute, vr::EVRScalarUnits::VRScalarUnits_NormalizedTwoSided);
+        GetDriver()->GetInput()->CreateBooleanComponent(props, "/input/trackpad/click", &this->trackpad_click_component_);
+        GetDriver()->GetInput()->CreateBooleanComponent(props, "/input/trackpad/touch", &this->trackpad_touch_component_);
+        GetDriver()->GetInput()->CreateScalarComponent(props, "/input/trackpad/x", &this->trackpad_x_component_, vr::EVRScalarType::VRScalarType_Absolute, vr::EVRScalarUnits::VRScalarUnits_NormalizedTwoSided);
+        GetDriver()->GetInput()->CreateScalarComponent(props, "/input/trackpad/y", &this->trackpad_y_component_, vr::EVRScalarType::VRScalarType_Absolute, vr::EVRScalarUnits::VRScalarUnits_NormalizedTwoSided);
+
+        GetDriver()->GetInput()->CreateBooleanComponent(props, "/input/joystick/click", &this->joystick_click_component_);
+        GetDriver()->GetInput()->CreateBooleanComponent(props, "/input/joystick/touch", &this->joystick_touch_component_);
+        GetDriver()->GetInput()->CreateScalarComponent(props, "/input/joystick/x", &this->joystick_x_component_, vr::EVRScalarType::VRScalarType_Absolute, vr::EVRScalarUnits::VRScalarUnits_NormalizedTwoSided);
+        GetDriver()->GetInput()->CreateScalarComponent(props, "/input/joystick/y", &this->joystick_y_component_, vr::EVRScalarType::VRScalarType_Absolute, vr::EVRScalarUnits::VRScalarUnits_NormalizedTwoSided);
+    }
     
-    GetDriver()->GetInput()->CreateBooleanComponent(props, "/input/joystick/click", &this->joystick_click_component_);
-    GetDriver()->GetInput()->CreateBooleanComponent(props, "/input/joystick/touch", &this->joystick_touch_component_);
-    GetDriver()->GetInput()->CreateScalarComponent(props, "/input/joystick/x", &this->joystick_x_component_, vr::EVRScalarType::VRScalarType_Absolute, vr::EVRScalarUnits::VRScalarUnits_NormalizedTwoSided);
-    GetDriver()->GetInput()->CreateScalarComponent(props, "/input/joystick/y", &this->joystick_y_component_, vr::EVRScalarType::VRScalarType_Absolute, vr::EVRScalarUnits::VRScalarUnits_NormalizedTwoSided);
-
     // Set some universe ID (Must be 2 or higher)
     GetDriver()->GetProperties()->SetUint64Property(props, vr::Prop_CurrentUniverseId_Uint64, 2);
     
@@ -152,7 +208,7 @@ vr::EVRInitError OculusToSteamVR::ControllerDevice::Activate(uint32_t unObjectId
     GetDriver()->GetProperties()->SetStringProperty(props, vr::Prop_ModelNumber_String, "example_controller");
 
     // Set up a render model path
-    GetDriver()->GetProperties()->SetStringProperty(props, vr::Prop_RenderModelName_String, "{oculus_to_steamvr}example_controller");
+    GetDriver()->GetProperties()->SetStringProperty(props, vr::Prop_RenderModelName_String, "{oculus_to_steamvr}/rendermodels/example_controller");
 
     // Give SteamVR a hint at what hand this controller is for
     if (this->handedness_ == Handedness::LEFT) {
@@ -169,9 +225,19 @@ vr::EVRInitError OculusToSteamVR::ControllerDevice::Activate(uint32_t unObjectId
     GetDriver()->GetProperties()->SetStringProperty(props, vr::Prop_InputProfilePath_String, "{oculus_to_steamvr}/input/example_controller_bindings.json");
 
     // Change the icon depending on which handedness this controller is using (ANY uses right)
-    std::string controller_handedness_str = this->handedness_ == Handedness::LEFT ? "left" : "right";
-    std::string controller_ready_file = "{oculus_to_steamvr}/icons/controller_ready_" + controller_handedness_str + ".png";
-    std::string controller_not_ready_file = "{oculus_to_steamvr}/icons/controller_not_ready_" + controller_handedness_str + ".png";
+    std::string controller_ready_file;
+    std::string controller_not_ready_file;
+    if (this->handedness_ != Handedness::ANY)
+    {
+        std::string controller_handedness_str = this->handedness_ == Handedness::LEFT ? "left" : "right";
+        controller_ready_file = "{oculus_to_steamvr}/icons/controller_ready_" + controller_handedness_str + ".png";
+        controller_not_ready_file = "{oculus_to_steamvr}/icons/controller_not_ready_" + controller_handedness_str + ".png";
+    }
+    else
+    {
+        controller_ready_file = "{oculus_to_steamvr}/icons/trackingreference_ready.png";
+        controller_not_ready_file = "{oculus_to_steamvr}/icons/trackingreference_not_ready.png";
+    }
 
     GetDriver()->GetProperties()->SetStringProperty(props, vr::Prop_NamedIconPathDeviceReady_String, controller_ready_file.c_str());
 
@@ -182,6 +248,18 @@ vr::EVRInitError OculusToSteamVR::ControllerDevice::Activate(uint32_t unObjectId
     GetDriver()->GetProperties()->SetStringProperty(props, vr::Prop_NamedIconPathDeviceNotReady_String, controller_not_ready_file.c_str());
     GetDriver()->GetProperties()->SetStringProperty(props, vr::Prop_NamedIconPathDeviceStandby_String, controller_not_ready_file.c_str());
     GetDriver()->GetProperties()->SetStringProperty(props, vr::Prop_NamedIconPathDeviceAlertLow_String, controller_not_ready_file.c_str());
+
+    vr::DriverPose_t defaultPose = IVRDevice::MakeDefaultPose();
+    defaultPose.vecPosition[0] =
+        defaultPose.vecPosition[1] =
+        defaultPose.vecPosition[2] =
+        defaultPose.qRotation.x =
+        defaultPose.qRotation.y =
+        defaultPose.qRotation.z =
+        0;
+    defaultPose.qRotation.w = 1;
+    GetDriver()->GetDriverHost()->TrackedDevicePoseUpdated(this->device_index_, defaultPose, sizeof(vr::DriverPose_t));
+    this->last_pose_ = defaultPose;
 
     return vr::EVRInitError::VRInitError_None;
 }

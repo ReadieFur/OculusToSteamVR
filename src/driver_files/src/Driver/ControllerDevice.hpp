@@ -42,8 +42,10 @@ namespace OculusToSteamVR {
 
         vr::DriverPose_t last_pose_;
 
-        bool did_vibrate_ = false;
-        float vibrate_anim_state_ = 0.f;
+        bool did_identify_ = false;
+        float identify_anim_state_ = 0.f;
+        int calibrationSamples = 0;
+        ovrPosef calibrationSampleData;
 
         vr::VRInputComponentHandle_t haptic_component_ = 0;
 

@@ -6,34 +6,62 @@
 
 vr::EVRInitError OculusToSteamVR::VRDriver::Init(vr::IVRDriverContext* pDriverContext)
 {
-    // Perform driver context initialisation
+    //Perform driver context initialisation
     if (vr::EVRInitError init_error = vr::InitServerDriverContext(pDriverContext); init_error != vr::EVRInitError::VRInitError_None) {
         return init_error;
     }
 
-    Log("Activating ExampleDriver...");
+    Log("Activating OculusToSteamVR...");
 
-    // Add a HMD
-    this->AddDevice(std::make_shared<HMDDevice>("Example_HMDDevice"));
+    ovrResult oculusVRResult = ovr_Initialize(nullptr);
+    if (OVR_FAILURE(oculusVRResult))
+    {
+        //TODO: If the error is due to the Oculus service not being active, e.g. -3003 try to launch the Oculus service.
+        Log("Failed to initalize OVR. Code " + std::to_string(oculusVRResult));
+        return vr::VRInitError_Driver_Failed;
+    }
+    ovrGraphicsLuid oculusVRLuid;
+    oculusVRResult = ovr_Create(&oculusVRSession, &oculusVRLuid);
+    if (OVR_FAILURE(oculusVRResult))
+    {
+        Log("Failed to initalize OVR. Code " + std::to_string(oculusVRResult));
+        ovr_Shutdown();
+        return vr::VRInitError_Driver_Failed;
+    }
+    oculusVRInitialized = true;
+    //ovr_SetTrackingOriginType(oculusVRSession, ovrTrackingOrigin_FloorLevel);
+    ovr_SetTrackingOriginType(oculusVRSession, ovrTrackingOrigin_EyeLevel);
+    ovrPosef oculusVROrigin;
+    oculusVROrigin.Orientation.w = 1;
+    oculusVROrigin.Orientation.x = oculusVROrigin.Orientation.y = oculusVROrigin.Orientation.z = 0;
+    oculusVROrigin.Position.x = oculusVROrigin.Position.y = oculusVROrigin.Position.z = 0;
+    ovr_SpecifyTrackingOrigin(oculusVRSession, oculusVROrigin);
+    offset = oculusVROrigin;
 
-    // Add a couple controllers
-    this->AddDevice(std::make_shared<ControllerDevice>("Example_ControllerDevice_Left", ControllerDevice::Handedness::LEFT));
-    this->AddDevice(std::make_shared<ControllerDevice>("Example_ControllerDevice_Right", ControllerDevice::Handedness::RIGHT));
+    //Add controllers
+    this->AddDevice(std::make_shared<ControllerDevice>("oculus_to_steamvr_controller_ref", ControllerDevice::Handedness::ANY));
+    this->AddDevice(std::make_shared<ControllerDevice>("oculus_to_steamvr_controller_right", ControllerDevice::Handedness::RIGHT));
+    this->AddDevice(std::make_shared<ControllerDevice>("oculus_to_steamvr_controller_left", ControllerDevice::Handedness::LEFT));
 
-    // Add a tracker
-    this->AddDevice(std::make_shared<TrackerDevice>("Example_TrackerDevice"));
+    //Add a tracker
+    //this->AddDevice(std::make_shared<TrackerDevice>("oculus_to_steamvr_TrackerDevice"));
 
-    // Add a couple tracking references
-    this->AddDevice(std::make_shared<TrackingReferenceDevice>("Example_TrackingReference_A"));
-    this->AddDevice(std::make_shared<TrackingReferenceDevice>("Example_TrackingReference_B"));
+    //Add a tracking reference. I would like to use this to indicate the 0 point/hmd location for calibration but I can't seem to get a model to appear for this so I am currently using a controller.
+    //this->AddDevice(std::make_shared<TrackingReferenceDevice>("oculus_to_steamvr_TrackingReference"));
 
-    Log("ExampleDriver Loaded Successfully");
+    Log("OculusToSteamVR Loaded Successfully");
 
 	return vr::VRInitError_None;
 }
 
 void OculusToSteamVR::VRDriver::Cleanup()
 {
+    Log("Shutting down ExampleDriver...");
+    if (oculusVRInitialized)
+    {
+        ovr_Destroy(oculusVRSession);
+        ovr_Shutdown();
+    }
 }
 
 void OculusToSteamVR::VRDriver::RunFrame()
@@ -52,9 +80,18 @@ void OculusToSteamVR::VRDriver::RunFrame()
     this->frame_timing_ = std::chrono::duration_cast<std::chrono::milliseconds>(now - this->last_frame_time_);
     this->last_frame_time_ = now;
 
+    //Check oculus flags.
+    ovrSessionStatus oculusVRSessionStatus;
+    ovr_RecenterTrackingOrigin(oculusVRSession);
+    ovr_GetSessionStatus(oculusVRSession, &oculusVRSessionStatus);
+    if (oculusVRSessionStatus.ShouldQuit) { Cleanup(); }
+    if (oculusVRSessionStatus.ShouldRecenter) { ovr_ClearShouldRecenterFlag(oculusVRSession); }
+
     // Update devices
     for (auto& device : this->devices_)
+    {
         device->Update();
+    }
 }
 
 bool OculusToSteamVR::VRDriver::ShouldBlockStandbyMode()
