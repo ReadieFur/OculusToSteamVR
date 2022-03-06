@@ -25,7 +25,7 @@
 *.lai
 *.la
 *.a
-*.lib
+# *.lib
 
 # Executables
 *.exe
@@ -65,12 +65,12 @@ _deps
 mono_crash.*
 
 # Build results
-[Dd]ebug/
+/src/[Dd]ebug/
 [Dd]ebugPublic/
-[Rr]elease/
-[Rr]eleases/
-x64/
-x86/
+/src/[Rr]elease/
+/src/[Rr]eleases/
+/src/x64/
+/src/x86/
 [Ww][Ii][Nn]32/
 [Aa][Rr][Mm]/
 [Aa][Rr][Mm]64/
@@ -449,3 +449,4 @@ FodyWeavers.xsd
 *.vcxproj
 *.filters
 *.sln
+/src/driver_oculus_to_steamvr.dir/
