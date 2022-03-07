@@ -1,0 +1,12 @@
+Todo:
+    ☐ Improve the calibration to be more accurate.
+    ☐ Make a UI for the calibration instead of using the "identify device" button on the SteamVR dashboard.
+    ☐ Don't use a controller as the calibration refrence marker (figure out how to get a model to render for a tracking reference).
+    ☐ Get Oculus focus so that touch events can be obtained.
+
+Done:
+    ✔ Use LibOVR (native PC sdk for Oculus) to get the tracking data. @done(22-03-07 12:26)
+    ✔ Roughly calibrate the Oculus origin in SteamVR space. @done(22-03-07 12:27)
+
+Cancelled:
+    
