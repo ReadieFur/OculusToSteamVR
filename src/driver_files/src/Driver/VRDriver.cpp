@@ -39,7 +39,7 @@ vr::EVRInitError OculusToSteamVR::VRDriver::Init(vr::IVRDriverContext* pDriverCo
     offset = oculusVROrigin;
 
     //Add controllers
-    this->AddDevice(std::make_shared<ControllerDevice>("oculus_to_steamvr_controller_ref", ControllerDevice::Handedness::ANY));
+    //this->AddDevice(std::make_shared<ControllerDevice>("oculus_to_steamvr_controller_ref", ControllerDevice::Handedness::ANY));
     this->AddDevice(std::make_shared<ControllerDevice>("oculus_to_steamvr_controller_right", ControllerDevice::Handedness::RIGHT));
     this->AddDevice(std::make_shared<ControllerDevice>("oculus_to_steamvr_controller_left", ControllerDevice::Handedness::LEFT));
 
@@ -47,7 +47,19 @@ vr::EVRInitError OculusToSteamVR::VRDriver::Init(vr::IVRDriverContext* pDriverCo
     //this->AddDevice(std::make_shared<TrackerDevice>("oculus_to_steamvr_TrackerDevice"));
 
     //Add a tracking reference. I would like to use this to indicate the 0 point/hmd location for calibration but I can't seem to get a model to appear for this so I am currently using a controller.
-    //this->AddDevice(std::make_shared<TrackingReferenceDevice>("oculus_to_steamvr_TrackingReference"));
+    for (unsigned int i = 0; i < ovr_GetTrackerCount(oculusVRSession); i++)
+    {
+        ovrTrackerPose oculusPose = ovr_GetTrackerPose(oculusVRSession, i);
+        vr::DriverPose_t steamVRPose = IVRDevice::MakeDefaultPose();
+        steamVRPose.vecPosition[0] = oculusPose.LeveledPose.Position.x;
+        steamVRPose.vecPosition[1] = oculusPose.LeveledPose.Position.y;
+        steamVRPose.vecPosition[2] = oculusPose.LeveledPose.Position.z;
+        steamVRPose.qRotation.w = oculusPose.LeveledPose.Orientation.w;
+        steamVRPose.qRotation.x = oculusPose.LeveledPose.Orientation.x;
+        steamVRPose.qRotation.y = oculusPose.LeveledPose.Orientation.y;
+        steamVRPose.qRotation.z = oculusPose.LeveledPose.Orientation.z;
+        this->AddDevice(std::make_shared<TrackingReferenceDevice>("oculus_to_steamvr_TrackingReference_" + std::to_string(i), steamVRPose));
+    }
 
     Log("OculusToSteamVR Loaded Successfully");
 

@@ -12,7 +12,7 @@ namespace OculusToSteamVR {
     class TrackingReferenceDevice : public IVRDevice {
         public:
 
-            TrackingReferenceDevice(std::string serial);
+            TrackingReferenceDevice(std::string serial, vr::DriverPose_t pose);
             ~TrackingReferenceDevice() = default;
 
             // Inherited via IVRDevice
