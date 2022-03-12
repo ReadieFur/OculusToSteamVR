@@ -1,6 +1,6 @@
 # OculusToSteamVR
 Use Oculus controllers with SteamVR headsets.  
-**NOTE:** While this can be used it is not complete, more details can be seen at the [todo section](#todo).
+**NOTE:** While this can be used it is not complete, more details can be seen at the [todo section](#Todo).
 
 <img src="assets/demo.gif" width="720">  
 
