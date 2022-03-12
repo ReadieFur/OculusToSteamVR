@@ -12,6 +12,8 @@ std::string OculusToSteamVR::ControllerDevice::GetSerial()
     return this->serial_;
 }
 
+static bool isManuallyCalibrating;
+static float calibrationButtonTime;
 void OculusToSteamVR::ControllerDevice::Update()
 {
     if (this->device_index_ == vr::k_unTrackedDeviceIndexInvalid)
@@ -53,6 +55,11 @@ void OculusToSteamVR::ControllerDevice::Update()
     {
         this->identify_anim_state_ += (GetDriver()->GetLastFrameTime().count() / 1000.f);
         if (this->identify_anim_state_ > 1.0f)
+        {
+            this->did_identify_ = false;
+            this->identify_anim_state_ = 0.0f;
+        }
+        /*if (this->identify_anim_state_ > 1.0f)
         {
             ovrPosef averageOffset = this->calibrationSampleData;
             if (this->calibrationSamples != 0)
@@ -109,7 +116,7 @@ void OculusToSteamVR::ControllerDevice::Update()
                 this->calibrationSampleData.Orientation.y += oculusVRTrackingState.HandPoses[controllerIndex].ThePose.Orientation.y;
                 this->calibrationSampleData.Orientation.z += oculusVRTrackingState.HandPoses[controllerIndex].ThePose.Orientation.z;
             }
-        }
+        }*/
     }
 
     //Get the calibrated offset to use.
@@ -160,8 +167,32 @@ void OculusToSteamVR::ControllerDevice::Update()
 
     //Input: https://developer.oculus.com/documentation/native/pc/dg-input-touch-buttons/
     ovrInputState inputState;
-    if (OVR_SUCCESS(ovr_GetInputState(oculusVRSession, this->handedness_ == Handedness::LEFT ? ovrControllerType_LTouch : ovrControllerType_RTouch, &inputState)))
+    //if (OVR_SUCCESS(ovr_GetInputState(oculusVRSession, this->handedness_ == Handedness::LEFT ? ovrControllerType_LTouch : ovrControllerType_RTouch, &inputState)))
+    if (OVR_SUCCESS(ovr_GetInputState(oculusVRSession, ovrControllerType_Touch, &inputState)))
     {
+        //Calibration
+        bool calibrationKeysPressed = inputState.Buttons == ovrButton_Enter + ovrButton_A;
+        if (calibrationButtonTime < 1.0f) { calibrationButtonTime += GetDriver()->GetLastFrameTime().count() / 1000.f; }
+        //Do not toggle the calibration state if the buttons were pressed within the past second.
+        if (calibrationKeysPressed && calibrationButtonTime >= 1.0f)
+        {
+            isManuallyCalibrating = !isManuallyCalibrating;
+            calibrationButtonTime = 0.0f;
+        }
+        //If calibration toggle buttons are pressed, don't move the controllers.
+        if (isManuallyCalibrating && (calibrationButtonTime >= 1.0f || !calibrationKeysPressed))
+        {
+            const float distanceToAdd = 0.001f;
+            //I am not using the thumbsticks becuase they are the most likley componenets to be damanged and have drift (as they are in my case).
+            if (inputState.Buttons & ovrButton_X) { GetDriver()->offset.Position.y += distanceToAdd; } //Up
+            if (inputState.Buttons & ovrButton_Y) { GetDriver()->offset.Position.y += -distanceToAdd; } //Down
+            if (inputState.Buttons & ovrButton_A) { GetDriver()->offset.Position.x += -distanceToAdd; } //Left
+            if (inputState.Buttons & ovrButton_B) { GetDriver()->offset.Position.x += distanceToAdd; } //Right
+            if (inputState.HandTrigger[1] >= 0.9f) { GetDriver()->offset.Position.z += distanceToAdd; } //Forward
+            if (inputState.HandTrigger[0] >= 0.9f) { GetDriver()->offset.Position.z += -distanceToAdd; } //Back
+        }
+
+        //Input
         if (this->handedness_ == Handedness::LEFT)
         {
             GetDriver()->GetInput()->UpdateBooleanComponent(this->x_button_click_component_, inputState.Buttons& ovrButton_X, 0);
