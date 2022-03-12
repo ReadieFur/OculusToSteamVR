@@ -41,6 +41,10 @@ vr::EVRInitError OculusToSteamVR::VRDriver::Init(vr::IVRDriverContext* pDriverCo
     oculusVROrigin.Position.x = oculusVROrigin.Position.y = oculusVROrigin.Position.z = 0;
     ovr_SpecifyTrackingOrigin(oculusVRSession, oculusVROrigin);
     offset = oculusVROrigin;
+    vr::EVRSettingsError err = vr::EVRSettingsError::VRSettingsError_None;
+    offset.Position.x = vr::VRSettings()->GetFloat(settings_key_.c_str(), "offset_x", &err);
+    offset.Position.y = vr::VRSettings()->GetFloat(settings_key_.c_str(), "offset_y", &err);
+    offset.Position.z = vr::VRSettings()->GetFloat(settings_key_.c_str(), "offset_z", &err);
 
     //Setup rendering to oculus, required to get focus and obtain input.
     //A nice bit of threaded mess here :)
@@ -92,6 +96,13 @@ vr::EVRInitError OculusToSteamVR::VRDriver::Init(vr::IVRDriverContext* pDriverCo
 void OculusToSteamVR::VRDriver::Cleanup()
 {
     active = false;
+
+    //Save settings.
+    vr::EVRSettingsError err = vr::EVRSettingsError::VRSettingsError_None; //Ignore all errors for now.
+    vr::VRSettings()->SetFloat(settings_key_.c_str(), "offset_x", offset.Position.x, &err);
+    vr::VRSettings()->SetFloat(settings_key_.c_str(), "offset_y", offset.Position.y, &err);
+    vr::VRSettings()->SetFloat(settings_key_.c_str(), "offset_z", offset.Position.z, &err);
+
     Log("Shutting down OculusToSteamVR...");
     if (oculusVRInitialized)
     {

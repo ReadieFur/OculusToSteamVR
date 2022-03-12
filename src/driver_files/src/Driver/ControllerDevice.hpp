@@ -43,9 +43,13 @@ namespace OculusToSteamVR {
         vr::DriverPose_t last_pose_;
 
         bool did_identify_ = false;
-        float identify_anim_state_ = 0.f;
+        float identify_anim_state_ = 0.0f;
         int calibrationSamples = 0;
         ovrPosef calibrationSampleData;
+
+        //Extern issue or something, wasn't bothered to fix so I placed the variables in the ControllerDevice.cpp file.
+        //static bool isManuallyCalibrating;
+        //static float calibrationButtonTime;
 
         vr::VRInputComponentHandle_t haptic_component_ = 0;
 
