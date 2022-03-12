@@ -37,6 +37,10 @@ This will put the controllers into calibration mode, use the following buttons t
 Once you are happy with your calibration, press both the `Menu` and `A` buttons on the controllers again to exit calibration mode and save the calibration.  
 **NOTE:** As of now there is no rotation calibration.
 
+## Todo:
+- Add rotation calibration.
+- Add automatic calibration.
+
 ## Devlopers:
 ### Building:
 - Clone the project and submodules

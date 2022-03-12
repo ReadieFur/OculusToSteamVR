@@ -1,12 +1,12 @@
 Todo:
-    ☐ Improve the calibration to be more accurate.
-        ☐ New calibration idea, hold the controller infront of the HMD, similar to how Oculus initilizes tracking on the CV1, offset the controller slightly from there and allow fine tuning through a UI or something.
-    ☐ Make a UI for the calibration instead of using the "identify device" button on the SteamVR dashboard.
-    ☐ Get Oculus focus so that touch events can be obtained.
+    ☐ Improve the calibration to be more accurate (automatic calibration).
 
 Done:
     ✔ Use LibOVR (native PC sdk for Oculus) to get the tracking data. @done(22-03-07 12:26)
     ✔ Roughly calibrate the Oculus origin in SteamVR space. @done(22-03-07 12:27)
+    ✔ Get Oculus focus so that touch events can be obtained. @done(22-03-12 21:11)
 
 Cancelled:
     ✘ Don't use a controller as the calibration refrence marker (figure out how to get a model to render for a tracking reference). @cancelled(22-03-08 02:54) Reason: New calibration idea.
+    ✘ New calibration idea, hold the controller infront of the HMD, similar to how Oculus initilizes tracking on the CV1, offset the controller slightly from there and allow fine tuning through a UI or something. @cancelled(22-03-12 21:10) Reason: Manual calibration used instead.
+    ✘ Make a UI for the calibration instead of using the "identify device" button on the SteamVR dashboard. @cancelled(22-03-12 21:10) Reason: Button combination on the controllers used instead.
