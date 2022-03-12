@@ -32,6 +32,7 @@ target_include_directories("${PROJECT_NAME}" PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}
 target_include_directories("${PROJECT_NAME}" PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/libraries/linalg")
 target_include_directories("${PROJECT_NAME}" PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/libraries/LibOVR/Include")
 target_include_directories("${PROJECT_NAME}" PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/libraries/LibOVR/Include/Extras")
+target_include_directories("${PROJECT_NAME}" PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/libraries/DirectX")
 target_include_directories("${PROJECT_NAME}" PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/driver_files/src/")
 target_link_libraries("${PROJECT_NAME}" PUBLIC "${OPENVR_LIB}")
 target_link_libraries("${PROJECT_NAME}" PUBLIC "${LIBOVR_LIB}")

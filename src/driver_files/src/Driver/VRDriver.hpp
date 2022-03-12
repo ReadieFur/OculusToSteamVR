@@ -42,5 +42,12 @@ namespace OculusToSteamVR {
         std::string settings_key_ = "driver_oculus_to_steamvr";
 
         bool oculusVRInitialized = false;
+
+        static bool OculusRenderLoop(
+            bool retryCreate,
+            std::shared_ptr<OculusToSteamVR::IVRDriver> driver,
+            ovrSession session,
+            ovrGraphicsLuid luid
+        );
     };
 };
