@@ -2,7 +2,7 @@
 
 /************************************************************************************
 Filename    :   Win32_DirectXAppUtil.h
-Content     :   D3D11 application/Window setup functionality for RoomTiny
+Content     :   D3D11 application/Window setup functionality for RoomTiny(OculusToSteamVR).
 Created     :   October 20th, 2014
 Author      :   Tom Heath
 Copyright   :   Copyright (c) Facebook Technologies, LLC and its affiliates. All rights reserved.
@@ -42,11 +42,11 @@ using namespace DirectX;
 #pragma comment(lib, "d3dcompiler.lib")
 
 #ifndef VALIDATE
-#define VALIDATE(x, msg) if (!(x)) { MessageBoxA(nullptr, (msg), "OculusRoomTiny", MB_ICONERROR | MB_OK); exit(-1); }
+#define VALIDATE(x, msg) if (!(x)) { MessageBoxA(nullptr, (msg), "OculusToSteamVR", MB_ICONERROR | MB_OK); exit(-1); }
 #endif
 
 #ifndef FATALERROR
-#define FATALERROR(msg) { MessageBoxA(nullptr, (msg), "OculusRoomTiny", MB_ICONERROR | MB_OK); exit(-1); }
+#define FATALERROR(msg) { MessageBoxA(nullptr, (msg), "OculusToSteamVR", MB_ICONERROR | MB_OK); exit(-1); }
 #endif
 
 
@@ -204,6 +204,14 @@ struct DirectX11
         return true;
     }
 
+    void HideWindow()
+    {
+        if (Window)
+        {
+            ShowWindow(Window, SW_HIDE);
+        }
+    }
+
     void CloseWindow()
     {
         if (Window)
@@ -212,6 +220,30 @@ struct DirectX11
             Window = nullptr;
             UnregisterClassW(L"App", hInstance);
         }
+    }
+
+    std::string GetLastErrorAsString()
+    {
+        //Get the error message ID, if any.
+        DWORD errorMessageID = ::GetLastError();
+        if (errorMessageID == 0) {
+            return std::string(); //No error message has been recorded
+        }
+
+        LPSTR messageBuffer = nullptr;
+
+        //Ask Win32 to give us the string version of that message ID.
+        //The parameters we pass in, tell Win32 to create the buffer that holds the message for us (because we don't yet know how long the message string will be).
+        size_t size = FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+            NULL, errorMessageID, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPSTR)&messageBuffer, 0, NULL);
+
+        //Copy the error message into a std::string.
+        std::string message(messageBuffer, size);
+
+        //Free the Win32's string's buffer.
+        LocalFree(messageBuffer);
+
+        return message + " Code: " + std::to_string(errorMessageID);
     }
 
     bool InitDevice(int vpW, int vpH, const LUID* pLuid, bool windowed = true, int scale = 1)
@@ -226,11 +258,18 @@ struct DirectX11
         AdjustWindowRect(&size, WS_OVERLAPPEDWINDOW, false);
         const UINT flags = SWP_NOMOVE | SWP_NOZORDER | SWP_SHOWWINDOW;
         if (!SetWindowPos(Window, nullptr, 0, 0, size.right - size.left, size.bottom - size.top, flags))
+        {
+            //_driver->Log("Failed to set window position.");
             return false;
+        }
 
         IDXGIFactory* DXGIFactory = nullptr;
         HRESULT hr = CreateDXGIFactory1(__uuidof(IDXGIFactory), (void**)(&DXGIFactory));
-        VALIDATE((hr == ERROR_SUCCESS), "CreateDXGIFactory1 failed");
+        if (hr != ERROR_SUCCESS)
+        {
+            //_driver->Log("CreateDXGIFactory1 failed");
+            return false;
+        }
 
         IDXGIAdapter* Adapter = nullptr;
         for (UINT iAdapter = 0; DXGIFactory->EnumAdapters(iAdapter, &Adapter) != DXGI_ERROR_NOT_FOUND; ++iAdapter)
@@ -256,7 +295,11 @@ struct DirectX11
         }
 #endif
         Release(Adapter);
-        VALIDATE((hr == ERROR_SUCCESS), "D3D11CreateDevice failed");
+        if (hr != ERROR_SUCCESS)
+        {
+            //_driver->Log("D3D11CreateDevice failed.");
+            return false;
+        }
 
         // Create swap chain
         DXGI_SWAP_CHAIN_DESC scDesc;
@@ -273,12 +316,20 @@ struct DirectX11
         scDesc.SwapEffect = DXGI_SWAP_EFFECT_SEQUENTIAL;
         hr = DXGIFactory->CreateSwapChain(Device, &scDesc, &SwapChain);
         Release(DXGIFactory);
-        VALIDATE((hr == ERROR_SUCCESS), "CreateSwapChain failed");
+        if (hr != ERROR_SUCCESS)
+        {
+            //_driver->Log("CreateSwapChain failed.");
+            return false;
+        }
 
         // Create backbuffer
         SwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (void**)&BackBuffer);
         hr = Device->CreateRenderTargetView(BackBuffer, nullptr, &BackBufferRT);
-        VALIDATE((hr == ERROR_SUCCESS), "CreateRenderTargetView failed");
+        if (hr != ERROR_SUCCESS)
+        {
+            //_driver->Log("CreateRenderTargetView failed.");
+            return false;
+        }
 
         // Main depth buffer
         MainDepthBuffer = new DepthBuffer(Device, WinSizeW, WinSizeH);
@@ -291,7 +342,11 @@ struct DirectX11
         // Set max frame latency to 1
         IDXGIDevice1* DXGIDevice1 = nullptr;
         hr = Device->QueryInterface(__uuidof(IDXGIDevice1), (void**)&DXGIDevice1);
-        VALIDATE((hr == ERROR_SUCCESS), "QueryInterface failed");
+        if (hr != ERROR_SUCCESS)
+        {
+            //_driver->Log("QueryInterface failed.");
+            return false;
+        }
         DXGIDevice1->SetMaximumFrameLatency(1);
         Release(DXGIDevice1);
 
@@ -339,16 +394,33 @@ struct DirectX11
                 Running = false;
         }
 #endif
+        //_driver->Log(GetLastErrorAsString());
+        //_driver->Log(Running ? "Y" : "N");
         return Running;
     }
 
-    void Run(bool (*MainLoop)(bool retryCreate))
+    //std::shared_ptr<OculusToSteamVR::IVRDriver> _driver;
+
+    void Run(
+        bool (*MainLoop)(
+            bool retryCreate,
+            std::shared_ptr<OculusToSteamVR::IVRDriver> driver,
+            ovrSession session,
+            ovrGraphicsLuid luid
+        ),
+        std::shared_ptr<OculusToSteamVR::IVRDriver> driver,
+        ovrSession session,
+        ovrGraphicsLuid luid
+    )
     {
+        //_driver = driver;
         while (HandleMessages())
         {
             // true => we'll attempt to retry for ovrError_DisplayLost
-            if (!MainLoop(true))
+            if (!MainLoop(true, driver, session, luid))
                 break;
+            //_driver->Log(GetLastErrorAsString());
+            driver->Log("Retry");
             // Sleep a bit before retrying to reduce CPU load while the HMD is disconnected
             Sleep(10);
         }

@@ -14,6 +14,7 @@ namespace OculusToSteamVR {
 
     class IVRDriver : protected vr::IServerTrackedDeviceProvider {
     public:
+        bool active = false;
         ovrSession oculusVRSession;
         ovrPosef offset;
 
