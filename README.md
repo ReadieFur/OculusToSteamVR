@@ -2,7 +2,7 @@
 Use Oculus controllers with SteamVR headsets.  
 **NOTE:** While this can be used it is not complete, more details can be seen at the [todo section](#todo).
 
-<img src="assets/Demo.gif" width="720">  
+<img src="assets/demo.gif" width="720">  
 
 ## Installation:
 There are two ways to install the plugin:
