@@ -158,6 +158,41 @@ void OculusToSteamVR::ControllerDevice::Update()
         if (oculusVRTrackingState.HandStatusFlags[controllerIndex] & ovrStatus_PositionTracked) { pose.result = vr::ETrackingResult::TrackingResult_Running_OutOfRange; }
     }
 
+    //Input: https://developer.oculus.com/documentation/native/pc/dg-input-touch-buttons/
+    ovrInputState inputState;
+    if (OVR_SUCCESS(ovr_GetInputState(oculusVRSession, this->handedness_ == Handedness::LEFT ? ovrControllerType_LTouch : ovrControllerType_RTouch, &inputState)))
+    {
+        if (this->handedness_ == Handedness::LEFT)
+        {
+            GetDriver()->GetInput()->UpdateBooleanComponent(this->x_button_click_component_, inputState.Buttons& ovrButton_X, 0);
+            GetDriver()->GetInput()->UpdateBooleanComponent(this->x_button_touch_component_, inputState.Touches& ovrTouch_X, 0);
+
+            GetDriver()->GetInput()->UpdateBooleanComponent(this->y_button_click_component_, inputState.Buttons& ovrButton_Y, 0);
+            GetDriver()->GetInput()->UpdateBooleanComponent(this->y_button_touch_component_, inputState.Touches& ovrTouch_Y, 0);
+
+            GetDriver()->GetInput()->UpdateBooleanComponent(this->system_click_component_, inputState.Buttons& ovrButton_Enter, 0);
+        }
+        else if (this->handedness_ == Handedness::RIGHT)
+        {
+            GetDriver()->GetInput()->UpdateBooleanComponent(this->a_button_click_component_, inputState.Buttons& ovrButton_A, 0);
+            GetDriver()->GetInput()->UpdateBooleanComponent(this->a_button_touch_component_, inputState.Touches& ovrTouch_A, 0);
+
+            GetDriver()->GetInput()->UpdateBooleanComponent(this->b_button_click_component_, inputState.Buttons& ovrButton_B, 0);
+            GetDriver()->GetInput()->UpdateBooleanComponent(this->b_button_touch_component_, inputState.Touches& ovrTouch_B, 0);
+        }
+
+        GetDriver()->GetInput()->UpdateScalarComponent(this->trigger_value_component_, inputState.IndexTrigger[controllerIndex], 0);
+        GetDriver()->GetInput()->UpdateBooleanComponent(this->trigger_click_component_, inputState.IndexTrigger[controllerIndex] >= 0.9f, 0); //Allow for a small bit of click variation.
+        GetDriver()->GetInput()->UpdateBooleanComponent(this->trigger_click_component_, inputState.Touches& (this->handedness_ == Handedness::LEFT ? ovrTouch_LIndexTrigger : ovrTouch_RIndexTrigger), 0);
+    
+        GetDriver()->GetInput()->UpdateScalarComponent(this->grip_value_component_, inputState.HandTrigger[controllerIndex], 0);
+
+        GetDriver()->GetInput()->UpdateBooleanComponent(this->joystick_click_component_, inputState.Buttons& (this->handedness_ == Handedness::LEFT ? ovrButton_LThumb : ovrButton_RThumb), 0);
+        GetDriver()->GetInput()->UpdateBooleanComponent(this->joystick_touch_component_, inputState.Touches& (this->handedness_ == Handedness::LEFT ? ovrTouch_LThumb : ovrTouch_RThumb), 0);
+        GetDriver()->GetInput()->UpdateScalarComponent(this->joystick_x_component_, inputState.Thumbstick[controllerIndex].x, 0);
+        GetDriver()->GetInput()->UpdateScalarComponent(this->joystick_y_component_, inputState.Thumbstick[controllerIndex].y, 0);
+    }
+
     //Post pose.
     GetDriver()->GetDriverHost()->TrackedDevicePoseUpdated(this->device_index_, pose, sizeof(vr::DriverPose_t));
     this->last_pose_ = pose;
@@ -198,21 +233,19 @@ vr::EVRInitError OculusToSteamVR::ControllerDevice::Activate(uint32_t unObjectId
         GetDriver()->GetInput()->CreateBooleanComponent(props, "/input/b/click", &this->b_button_click_component_);
         GetDriver()->GetInput()->CreateBooleanComponent(props, "/input/b/touch", &this->b_button_touch_component_);
 
+        GetDriver()->GetInput()->CreateBooleanComponent(props, "/input/x/click", &this->x_button_click_component_);
+        GetDriver()->GetInput()->CreateBooleanComponent(props, "/input/x/touch", &this->x_button_touch_component_);
+
+        GetDriver()->GetInput()->CreateBooleanComponent(props, "/input/y/click", &this->y_button_click_component_);
+        GetDriver()->GetInput()->CreateBooleanComponent(props, "/input/y/touch", &this->x_button_touch_component_);
+
         GetDriver()->GetInput()->CreateBooleanComponent(props, "/input/trigger/click", &this->trigger_click_component_);
         GetDriver()->GetInput()->CreateBooleanComponent(props, "/input/trigger/touch", &this->trigger_touch_component_);
         GetDriver()->GetInput()->CreateScalarComponent(props, "/input/trigger/value", &this->trigger_value_component_, vr::EVRScalarType::VRScalarType_Absolute, vr::EVRScalarUnits::VRScalarUnits_NormalizedOneSided);
 
-        GetDriver()->GetInput()->CreateBooleanComponent(props, "/input/grip/touch", &this->grip_touch_component_);
         GetDriver()->GetInput()->CreateScalarComponent(props, "/input/grip/value", &this->grip_value_component_, vr::EVRScalarType::VRScalarType_Absolute, vr::EVRScalarUnits::VRScalarUnits_NormalizedOneSided);
-        GetDriver()->GetInput()->CreateScalarComponent(props, "/input/grip/force", &this->grip_force_component_, vr::EVRScalarType::VRScalarType_Absolute, vr::EVRScalarUnits::VRScalarUnits_NormalizedOneSided);
 
         GetDriver()->GetInput()->CreateBooleanComponent(props, "/input/system/click", &this->system_click_component_);
-        GetDriver()->GetInput()->CreateBooleanComponent(props, "/input/system/touch", &this->system_touch_component_);
-
-        GetDriver()->GetInput()->CreateBooleanComponent(props, "/input/trackpad/click", &this->trackpad_click_component_);
-        GetDriver()->GetInput()->CreateBooleanComponent(props, "/input/trackpad/touch", &this->trackpad_touch_component_);
-        GetDriver()->GetInput()->CreateScalarComponent(props, "/input/trackpad/x", &this->trackpad_x_component_, vr::EVRScalarType::VRScalarType_Absolute, vr::EVRScalarUnits::VRScalarUnits_NormalizedTwoSided);
-        GetDriver()->GetInput()->CreateScalarComponent(props, "/input/trackpad/y", &this->trackpad_y_component_, vr::EVRScalarType::VRScalarType_Absolute, vr::EVRScalarUnits::VRScalarUnits_NormalizedTwoSided);
 
         GetDriver()->GetInput()->CreateBooleanComponent(props, "/input/joystick/click", &this->joystick_click_component_);
         GetDriver()->GetInput()->CreateBooleanComponent(props, "/input/joystick/touch", &this->joystick_touch_component_);

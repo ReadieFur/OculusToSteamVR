@@ -55,23 +55,20 @@ namespace OculusToSteamVR {
         vr::VRInputComponentHandle_t b_button_click_component_ = 0;
         vr::VRInputComponentHandle_t b_button_touch_component_ = 0;
 
+        vr::VRInputComponentHandle_t x_button_click_component_ = 0;
+        vr::VRInputComponentHandle_t x_button_touch_component_ = 0;
+
+        vr::VRInputComponentHandle_t y_button_click_component_ = 0;
+        vr::VRInputComponentHandle_t y_button_touch_component_ = 0;
+
         vr::VRInputComponentHandle_t trigger_value_component_ = 0;
         vr::VRInputComponentHandle_t trigger_click_component_ = 0;
         vr::VRInputComponentHandle_t trigger_touch_component_ = 0;
 
-        vr::VRInputComponentHandle_t grip_touch_component_ = 0;
         vr::VRInputComponentHandle_t grip_value_component_ = 0;
-        vr::VRInputComponentHandle_t grip_force_component_ = 0;
 
         vr::VRInputComponentHandle_t system_click_component_ = 0;
-        vr::VRInputComponentHandle_t system_touch_component_ = 0;
-
         
-        vr::VRInputComponentHandle_t trackpad_click_component_ = 0;
-        vr::VRInputComponentHandle_t trackpad_touch_component_ = 0;
-        vr::VRInputComponentHandle_t trackpad_x_component_ = 0;
-        vr::VRInputComponentHandle_t trackpad_y_component_ = 0;
-
         vr::VRInputComponentHandle_t joystick_click_component_ = 0;
         vr::VRInputComponentHandle_t joystick_touch_component_ = 0;
         vr::VRInputComponentHandle_t joystick_x_component_ = 0;
