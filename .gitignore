@@ -450,3 +450,4 @@ FodyWeavers.xsd
 *.filters
 *.sln
 /src/driver_oculus_to_steamvr.dir/
+*.lnk
