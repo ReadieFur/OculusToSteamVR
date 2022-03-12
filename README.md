@@ -2,7 +2,7 @@
 Use Oculus controllers with SteamVR headsets.  
 **NOTE:** While this can be used it is not complete, more details can be seen at the [todo section](#todo).
 
-<img src="./assets/Demo.gif" width="720">  
+<img src="assets/Demo.gif" width="720">  
 
 ## Installation:
 There are two ways to install the plugin:
@@ -10,7 +10,7 @@ There are two ways to install the plugin:
 - Find your SteamVR driver directory, which should be at:
   `C:\Program Files (x86)\Steam\steamapps\common\SteamVR\drivers`
   and copy the contents of the [latest release](https://github.com/ReadieFur/OculusToSteamVR/releases/latest) into the SteamVR drivers directory. Your folder structure should look something like this:
-![Drivers folder structure](assets/plugins_dir.png)
+<img src="assets/plugins_dir.png" width="720">  
 
 Or  
 - Navigate to `C:\Users\%Username%\AppData\Local\openvr` and find the `openvrpaths.vrpath` file. Open this file with your text editor of choice, and under `"external_drivers"`, add another entry with the location of the `oculus_to_steamvr` folder. For example mine looks like this after adding the entry:
