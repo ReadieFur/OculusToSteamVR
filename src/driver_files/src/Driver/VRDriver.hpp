@@ -39,7 +39,6 @@ namespace OculusToSteamVR {
         std::vector<vr::VREvent_t> openvr_events_;
         std::chrono::milliseconds frame_timing_ = std::chrono::milliseconds(16);
         std::chrono::system_clock::time_point last_frame_time_ = std::chrono::system_clock::now();
-        std::string settings_key_ = "driver_oculus_to_steamvr";
 
         bool oculusVRInitialized = false;
 

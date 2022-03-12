@@ -176,6 +176,14 @@ void OculusToSteamVR::ControllerDevice::Update()
         //Do not toggle the calibration state if the buttons were pressed within the past second.
         if (calibrationKeysPressed && calibrationButtonTime >= 1.0f)
         {
+            if (isManuallyCalibrating)
+            {
+                //Save settings.
+                vr::EVRSettingsError err = vr::EVRSettingsError::VRSettingsError_None; //Ignore all errors for now.
+                vr::VRSettings()->SetFloat(GetDriver()->settings_key_.c_str(), "offset_x", offset.Position.x, &err);
+                vr::VRSettings()->SetFloat(GetDriver()->settings_key_.c_str(), "offset_y", offset.Position.y, &err);
+                vr::VRSettings()->SetFloat(GetDriver()->settings_key_.c_str(), "offset_z", offset.Position.z, &err);
+            }
             isManuallyCalibrating = !isManuallyCalibrating;
             calibrationButtonTime = 0.0f;
         }
