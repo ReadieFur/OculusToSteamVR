@@ -25,6 +25,7 @@ Or
 ```
 
 ## Configuration:
+### Positioning the controllers:  
 By default the Oculus hardware wont be aligned properly in SteamVR space. I don't have a way to automatically calibrate this as of yet, so you will have to calibrate it manually.  
 To do this, open SteamVR and with your Oculus controllers press both the `Menu` (on the left controller) and `A` buttons on the controllers.  
 This will put the controllers into calibration mode, use the following buttons to move and calibrate the controllers:  
@@ -44,6 +45,9 @@ While in rotation mode:
 - `Right grip`: Rotate the controllers clockwise.
 - `Left grip`: Rotate the controllers anti-clockwise.  
 Once you are happy with your calibration, press both the `Menu` and `A` buttons on the controllers again to exit calibration mode and save the calibration.  
+
+### Using the controllers as trackers:
+You can use the controllers as trackers by toggling between the controller and tracker modes by pressing the `Menu` and `Right thumbstick` buttons on the controllers.
 
 ## Todo:
 - Add rotation calibration.
