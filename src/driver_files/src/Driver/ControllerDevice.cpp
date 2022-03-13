@@ -12,8 +12,6 @@ std::string OculusToSteamVR::ControllerDevice::GetSerial()
     return this->serial_;
 }
 
-static bool isManuallyCalibrating;
-static float calibrationButtonTime;
 void OculusToSteamVR::ControllerDevice::Update()
 {
     if (this->device_index_ == vr::k_unTrackedDeviceIndexInvalid)
@@ -61,9 +59,6 @@ void OculusToSteamVR::ControllerDevice::Update()
         }
     }
 
-    //Get the calibrated offset to use.
-    const ovrPosef offset = GetDriver()->offset;
-
     //Update the pose for this frame.
     auto pose = this->last_pose_;
 
@@ -74,9 +69,10 @@ void OculusToSteamVR::ControllerDevice::Update()
     //Position
     if (oculusVRTrackingState.HandStatusFlags[controllerIndex] & ovrStatus_PositionTracked)
     {
-        pose.vecPosition[0] = oculusVRTrackingState.HandPoses[controllerIndex].ThePose.Position.x - offset.Position.x;
-        pose.vecPosition[1] = oculusVRTrackingState.HandPoses[controllerIndex].ThePose.Position.y - offset.Position.y;
-        pose.vecPosition[2] = oculusVRTrackingState.HandPoses[controllerIndex].ThePose.Position.z - offset.Position.z;
+        //Translation should be the same on both sides.
+        pose.vecPosition[0] = oculusVRTrackingState.HandPoses[controllerIndex].ThePose.Position.x - GetDriver()->rightOffset.Translation.x;
+        pose.vecPosition[1] = oculusVRTrackingState.HandPoses[controllerIndex].ThePose.Position.y - GetDriver()->rightOffset.Translation.y;
+        pose.vecPosition[2] = oculusVRTrackingState.HandPoses[controllerIndex].ThePose.Position.z - GetDriver()->rightOffset.Translation.z;
     }
     else
     {
@@ -87,10 +83,12 @@ void OculusToSteamVR::ControllerDevice::Update()
     //Rotation
     if (oculusVRTrackingState.HandStatusFlags[controllerIndex] & ovrStatus_OrientationTracked)
     {
-        pose.qRotation.w = oculusVRTrackingState.HandPoses[controllerIndex].ThePose.Orientation.w;
-        pose.qRotation.x = oculusVRTrackingState.HandPoses[controllerIndex].ThePose.Orientation.x;
-        pose.qRotation.y = oculusVRTrackingState.HandPoses[controllerIndex].ThePose.Orientation.y;
-        pose.qRotation.z = oculusVRTrackingState.HandPoses[controllerIndex].ThePose.Orientation.z;
+        OVR::Posef oculusVRPose = oculusVRTrackingState.HandPoses[controllerIndex].ThePose; //I didn't know how to cast this to OVR::Posef directly so I have assigned it to a variable here.
+        OVR::Quatf poseWithOffset = oculusVRPose.Rotation * (this->handedness_ == Handedness::LEFT ? GetDriver()->leftOffset : GetDriver()->rightOffset).Rotation;
+        pose.qRotation.w = poseWithOffset.w;
+        pose.qRotation.x = poseWithOffset.x;
+        pose.qRotation.y = poseWithOffset.y;
+        pose.qRotation.z = poseWithOffset.z;
     }
     else
     {
@@ -99,41 +97,9 @@ void OculusToSteamVR::ControllerDevice::Update()
     }
 
     //Input: https://developer.oculus.com/documentation/native/pc/dg-input-touch-buttons/
-    //I have found an issuee where, at least in BeatSaber all inout is seen as clicks, for example resting your finger on any button will trigger a click.
     ovrInputState inputState;
-    if (OVR_SUCCESS(ovr_GetInputState(oculusVRSession, ovrControllerType_Touch, &inputState)))
+    if (OVR_SUCCESS(ovr_GetInputState(oculusVRSession, this->handedness_ == Handedness::LEFT ? ovrControllerType_LTouch : ovrControllerType_RTouch, &inputState)))
     {
-        //Calibration
-        bool calibrationKeysPressed = inputState.Buttons == ovrButton_Enter + ovrButton_A;
-        if (calibrationButtonTime < 1.0f) { calibrationButtonTime += GetDriver()->GetLastFrameTime().count() / 1000.f; }
-        //Do not toggle the calibration state if the buttons were pressed within the past second.
-        if (calibrationKeysPressed && calibrationButtonTime >= 1.0f)
-        {
-            if (isManuallyCalibrating)
-            {
-                //Save settings.
-                vr::EVRSettingsError err = vr::EVRSettingsError::VRSettingsError_None; //Ignore all errors for now.
-                vr::VRSettings()->SetFloat(GetDriver()->settings_key_.c_str(), "offset_x", offset.Position.x, &err);
-                vr::VRSettings()->SetFloat(GetDriver()->settings_key_.c_str(), "offset_y", offset.Position.y, &err);
-                vr::VRSettings()->SetFloat(GetDriver()->settings_key_.c_str(), "offset_z", offset.Position.z, &err);
-            }
-            isManuallyCalibrating = !isManuallyCalibrating;
-            calibrationButtonTime = 0.0f;
-        }
-        //If calibration toggle buttons are pressed, don't move the controllers.
-        if (isManuallyCalibrating && (calibrationButtonTime >= 1.0f || !calibrationKeysPressed))
-        {
-            const float distanceToAdd = 0.001f;
-            //I am not using the thumbsticks becuase they are the most likley componenets to be damanged and have drift (as they are in my case).
-            if (inputState.Buttons & ovrButton_X) { GetDriver()->offset.Position.y += distanceToAdd; } //Up
-            if (inputState.Buttons & ovrButton_Y) { GetDriver()->offset.Position.y += -distanceToAdd; } //Down
-            if (inputState.Buttons & ovrButton_A) { GetDriver()->offset.Position.x += -distanceToAdd; } //Left
-            if (inputState.Buttons & ovrButton_B) { GetDriver()->offset.Position.x += distanceToAdd; } //Right
-            if (inputState.HandTrigger[1] >= 0.9f) { GetDriver()->offset.Position.z += distanceToAdd; } //Forward
-            if (inputState.HandTrigger[0] >= 0.9f) { GetDriver()->offset.Position.z += -distanceToAdd; } //Back
-        }
-
-        //Input
         if (this->handedness_ == Handedness::LEFT)
         {
             GetDriver()->GetInput()->UpdateBooleanComponent(this->x_button_click_component_, inputState.Buttons& ovrButton_X, 0);

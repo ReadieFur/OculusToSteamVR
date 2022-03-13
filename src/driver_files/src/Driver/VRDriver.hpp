@@ -11,8 +11,6 @@
 namespace OculusToSteamVR {
     class VRDriver : public IVRDriver {
     public:
-
-
         // Inherited via IVRDriver
         virtual std::vector<std::shared_ptr<IVRDevice>> GetDevices() override;
         virtual std::vector<vr::VREvent_t> GetOpenVREvents() override;
@@ -39,8 +37,17 @@ namespace OculusToSteamVR {
         std::vector<vr::VREvent_t> openvr_events_;
         std::chrono::milliseconds frame_timing_ = std::chrono::milliseconds(16);
         std::chrono::system_clock::time_point last_frame_time_ = std::chrono::system_clock::now();
+        std::string settings_key_ = "driver_oculus_to_steamvr";
 
         bool oculusVRInitialized = false;
+        bool isManuallyCalibrating = false;
+        bool isCalibratingPosition = true;
+        float calibrationButtonTime = 1.0f;
+        /*I'm storing the rotation offset in euler angles becuase when I was trying to load the values back in as quaternions
+        I couldn't flip the rotation correctly for the left hand, very likley due to my limited knowledge with quaternions.*/
+        OVR::Vector3<float> eulerAnglesOffset;
+
+        float GetSettingsFloat(std::string key, float defaultValue);
 
         static bool OculusRenderLoop(
             bool retryCreate,

@@ -14,10 +14,10 @@ namespace OculusToSteamVR {
 
     class IVRDriver : protected vr::IServerTrackedDeviceProvider {
     public:
-        std::string settings_key_ = "driver_oculus_to_steamvr";
         bool active = false;
         ovrSession oculusVRSession;
-        ovrPosef offset;
+        OVR::Posef rightOffset;
+        OVR::Posef leftOffset;
 
         /// <summary>
         /// Returns all devices being managed by this driver
