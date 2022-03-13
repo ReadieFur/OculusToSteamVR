@@ -59,64 +59,6 @@ void OculusToSteamVR::ControllerDevice::Update()
             this->did_identify_ = false;
             this->identify_anim_state_ = 0.0f;
         }
-        /*if (this->identify_anim_state_ > 1.0f)
-        {
-            ovrPosef averageOffset = this->calibrationSampleData;
-            if (this->calibrationSamples != 0)
-            {
-                averageOffset.Position.x = averageOffset.Position.x != 0 ? averageOffset.Position.x / this->calibrationSamples : 0;
-                averageOffset.Position.y = averageOffset.Position.y != 0 ? averageOffset.Position.y / this->calibrationSamples : 0;
-                averageOffset.Position.z = averageOffset.Position.z != 0 ? averageOffset.Position.z / this->calibrationSamples : 0;
-                averageOffset.Orientation.w = averageOffset.Orientation.w != 0 ? averageOffset.Orientation.w / this->calibrationSamples : 0;
-                averageOffset.Orientation.x = averageOffset.Orientation.x != 0 ? averageOffset.Orientation.x / this->calibrationSamples : 0;
-                averageOffset.Orientation.y = averageOffset.Orientation.y != 0 ? averageOffset.Orientation.y / this->calibrationSamples : 0;
-                averageOffset.Orientation.z = averageOffset.Orientation.z != 0 ? averageOffset.Orientation.z / this->calibrationSamples : 0;
-            }
-            else
-            {
-                averageOffset.Position.x =
-                    averageOffset.Position.y =
-                    averageOffset.Position.z =
-                    averageOffset.Orientation.w =
-                    averageOffset.Orientation.x =
-                    averageOffset.Orientation.y =
-                    averageOffset.Orientation.z =
-                    0;
-            }
-
-            GetDriver()->offset = averageOffset;
-            GetDriver()->Log(
-                "Offset: x=" + std::to_string(averageOffset.Position.x) +
-                " y=" + std::to_string(averageOffset.Position.y) +
-                " z=" + std::to_string(averageOffset.Position.z)
-            );
-
-            this->did_identify_ = false;
-            this->identify_anim_state_ = 0.0f;
-            this->calibrationSamples = 0;
-            this->calibrationSampleData.Position.x =
-                this->calibrationSampleData.Position.y =
-                this->calibrationSampleData.Position.z =
-                this->calibrationSampleData.Orientation.w =
-                this->calibrationSampleData.Orientation.x =
-                this->calibrationSampleData.Orientation.y =
-                this->calibrationSampleData.Orientation.z =
-                0;
-        }
-        else
-        {
-            if (oculusVRTrackingState.HandStatusFlags[controllerIndex] & ovrStatus_PositionTracked)
-            {
-                this->calibrationSamples++;
-                this->calibrationSampleData.Position.x += oculusVRTrackingState.HandPoses[controllerIndex].ThePose.Position.x;
-                this->calibrationSampleData.Position.y += oculusVRTrackingState.HandPoses[controllerIndex].ThePose.Position.y;
-                this->calibrationSampleData.Position.z += oculusVRTrackingState.HandPoses[controllerIndex].ThePose.Position.z;
-                this->calibrationSampleData.Orientation.w += oculusVRTrackingState.HandPoses[controllerIndex].ThePose.Orientation.w;
-                this->calibrationSampleData.Orientation.x += oculusVRTrackingState.HandPoses[controllerIndex].ThePose.Orientation.x;
-                this->calibrationSampleData.Orientation.y += oculusVRTrackingState.HandPoses[controllerIndex].ThePose.Orientation.y;
-                this->calibrationSampleData.Orientation.z += oculusVRTrackingState.HandPoses[controllerIndex].ThePose.Orientation.z;
-            }
-        }*/
     }
 
     //Get the calibrated offset to use.
@@ -135,15 +77,6 @@ void OculusToSteamVR::ControllerDevice::Update()
         pose.vecPosition[0] = oculusVRTrackingState.HandPoses[controllerIndex].ThePose.Position.x - offset.Position.x;
         pose.vecPosition[1] = oculusVRTrackingState.HandPoses[controllerIndex].ThePose.Position.y - offset.Position.y;
         pose.vecPosition[2] = oculusVRTrackingState.HandPoses[controllerIndex].ThePose.Position.z - offset.Position.z;
-
-        /*GetDriver()->Log(
-            "Oculus: x=" + std::to_string(oculusVRTrackingState.HandPoses[controllerIndex].ThePose.Position.x) +
-            " y=" + std::to_string(oculusVRTrackingState.HandPoses[controllerIndex].ThePose.Position.y) +
-            " z=" + std::to_string(oculusVRTrackingState.HandPoses[controllerIndex].ThePose.Position.z) +
-            " With offset: x=" + std::to_string(pose.vecPosition[0]) +
-            " y=" + std::to_string(pose.vecPosition[1]) +
-            " z=" + std::to_string(pose.vecPosition[2])
-        );*/
     }
     else
     {
@@ -166,8 +99,8 @@ void OculusToSteamVR::ControllerDevice::Update()
     }
 
     //Input: https://developer.oculus.com/documentation/native/pc/dg-input-touch-buttons/
+    //I have found an issuee where, at least in BeatSaber all inout is seen as clicks, for example resting your finger on any button will trigger a click.
     ovrInputState inputState;
-    //if (OVR_SUCCESS(ovr_GetInputState(oculusVRSession, this->handedness_ == Handedness::LEFT ? ovrControllerType_LTouch : ovrControllerType_RTouch, &inputState)))
     if (OVR_SUCCESS(ovr_GetInputState(oculusVRSession, ovrControllerType_Touch, &inputState)))
     {
         //Calibration
@@ -222,7 +155,7 @@ void OculusToSteamVR::ControllerDevice::Update()
 
         GetDriver()->GetInput()->UpdateScalarComponent(this->trigger_value_component_, inputState.IndexTrigger[controllerIndex], 0);
         GetDriver()->GetInput()->UpdateBooleanComponent(this->trigger_click_component_, inputState.IndexTrigger[controllerIndex] >= 0.9f, 0); //Allow for a small bit of click variation.
-        GetDriver()->GetInput()->UpdateBooleanComponent(this->trigger_click_component_, inputState.Touches& (this->handedness_ == Handedness::LEFT ? ovrTouch_LIndexTrigger : ovrTouch_RIndexTrigger), 0);
+        GetDriver()->GetInput()->UpdateBooleanComponent(this->trigger_touch_component_, inputState.Touches& (this->handedness_ == Handedness::LEFT ? ovrTouch_LIndexTrigger : ovrTouch_RIndexTrigger), 0);
     
         GetDriver()->GetInput()->UpdateScalarComponent(this->grip_value_component_, inputState.HandTrigger[controllerIndex], 0);
 
@@ -296,7 +229,7 @@ vr::EVRInitError OculusToSteamVR::ControllerDevice::Activate(uint32_t unObjectId
     GetDriver()->GetProperties()->SetUint64Property(props, vr::Prop_CurrentUniverseId_Uint64, 2);
     
     // Set up a model "number" (not needed but good to have)
-    GetDriver()->GetProperties()->SetStringProperty(props, vr::Prop_ModelNumber_String, "oculus_controller");
+    GetDriver()->GetProperties()->SetStringProperty(props, vr::Prop_ModelNumber_String, "oculus_touch");
 
     // Set up a render model path
     //GetDriver()->GetProperties()->SetStringProperty(props, vr::Prop_RenderModelName_String, "{oculus_to_steamvr}/rendermodels/example_controller");
