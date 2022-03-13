@@ -28,14 +28,22 @@ Or
 By default the Oculus hardware wont be aligned properly in SteamVR space. I don't have a way to automatically calibrate this as of yet, so you will have to calibrate it manually.  
 To do this, open SteamVR and with your Oculus controllers press both the `Menu` (on the left controller) and `A` buttons on the controllers.  
 This will put the controllers into calibration mode, use the following buttons to move and calibrate the controllers:  
+- `Index trigger`: Toggle the calibration mode between position and rotation.  
+While in position mode:  
 - `X`: Move the controllers up.
 - `Y`: Move the controllers down.
 - `A`: Move the controllers left.
 - `B`: Move the controllers right.
 - `Right grip`: Move the controllers forward.
 - `Left grip`: Move the controllers backward.  
+While in rotation mode:
+- `X`: Rotate the controllers up.
+- `Y`: Rotate the controllers down.
+- `A`: Rotate the controllers left.
+- `B`: Rotate the controllers right.
+- `Right grip`: Rotate the controllers clockwise.
+- `Left grip`: Rotate the controllers anti-clockwise.  
 Once you are happy with your calibration, press both the `Menu` and `A` buttons on the controllers again to exit calibration mode and save the calibration.  
-**NOTE:** As of now there is no rotation calibration.
 
 ## Todo:
 - Add rotation calibration.
