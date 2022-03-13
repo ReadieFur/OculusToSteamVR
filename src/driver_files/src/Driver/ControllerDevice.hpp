@@ -12,16 +12,13 @@ namespace OculusToSteamVR {
     class ControllerDevice : public IVRDevice {
         public:
 
-            enum class Handedness {
-                LEFT,
-                RIGHT,
-                ANY
-            };
-
             ControllerDevice(std::string serial, Handedness handedness = Handedness::ANY);
             ~ControllerDevice() = default;
 
             // Inherited via IVRDevice
+            virtual void Enable() override;
+            virtual void Disable() override;
+
             virtual std::string GetSerial() override;
             virtual void Update() override;
             virtual vr::TrackedDeviceIndex_t GetDeviceIndex() override;

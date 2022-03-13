@@ -8,6 +8,9 @@ namespace OculusToSteamVR {
 
     class IVRDevice : public vr::ITrackedDeviceServerDriver {
     public:
+        virtual void Disable() = 0;
+        virtual void Enable() = 0;
+
         /// <summary>
         /// Returns the serial string for this device
         /// </summary>
@@ -59,5 +62,8 @@ namespace OculusToSteamVR {
         virtual vr::DriverPose_t GetPose() = 0;
 
         ~IVRDevice() = default;
+
+    protected:
+        bool enabled = true;
     };
 };

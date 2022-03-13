@@ -40,12 +40,14 @@ namespace OculusToSteamVR {
         std::string settings_key_ = "driver_oculus_to_steamvr";
 
         bool oculusVRInitialized = false;
+        bool inControllerMode = true;
         bool isManuallyCalibrating = false;
         bool isCalibratingPosition = true;
         float calibrationButtonTime = 1.0f;
         /*I'm storing the rotation offset in euler angles becuase when I was trying to load the values back in as quaternions
         I couldn't flip the rotation correctly for the left hand, very likley due to my limited knowledge with quaternions.*/
         OVR::Vector3<float> eulerAnglesOffset;
+        float modeToggleButtonTime = 1.0f;
 
         float GetSettingsFloat(std::string key, float defaultValue);
 

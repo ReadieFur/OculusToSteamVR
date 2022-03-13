@@ -1,8 +1,9 @@
 #include "TrackerDevice.hpp"
 #include <Windows.h>
 
-OculusToSteamVR::TrackerDevice::TrackerDevice(std::string serial):
-    serial_(serial)
+OculusToSteamVR::TrackerDevice::TrackerDevice(std::string serial, Handedness handedness):
+    serial_(serial),
+    handedness_(handedness)
 {
 }
 
@@ -11,9 +12,31 @@ std::string OculusToSteamVR::TrackerDevice::GetSerial()
     return this->serial_;
 }
 
+void OculusToSteamVR::TrackerDevice::Enable()
+{
+    if (enabled) { return; }
+    GetDriver()->Log("Enabling tracker " + this->serial_);
+    enabled = true;
+    auto pose = this->last_pose_;
+    pose.deviceIsConnected = true;
+    GetDriver()->GetDriverHost()->TrackedDevicePoseUpdated(this->device_index_, pose, sizeof(vr::DriverPose_t));
+    this->last_pose_ = pose;
+}
+
+void OculusToSteamVR::TrackerDevice::Disable()
+{
+    if (!enabled) { return; }
+    GetDriver()->Log("Disabling tracker " + this->serial_);
+    enabled = false;
+    auto pose = this->last_pose_;
+    pose.deviceIsConnected = false;
+    GetDriver()->GetDriverHost()->TrackedDevicePoseUpdated(this->device_index_, pose, sizeof(vr::DriverPose_t));
+    this->last_pose_ = pose;
+}
+
 void OculusToSteamVR::TrackerDevice::Update()
 {
-    if (this->device_index_ == vr::k_unTrackedDeviceIndexInvalid)
+    if (this->device_index_ == vr::k_unTrackedDeviceIndexInvalid || !enabled)
         return;
 
     // Check if this device was asked to be identified
@@ -38,40 +61,78 @@ void OculusToSteamVR::TrackerDevice::Update()
         }
     }
 
-    // Setup pose for this frame
-    auto pose = IVRDevice::MakeDefaultPose();
+    const int controllerIndex = this->handedness_ == Handedness::LEFT ? 0 : 1;
+    const ovrSession oculusVRSession = GetDriver()->oculusVRSession;
+    ovrTrackingState oculusVRTrackingState = ovr_GetTrackingState(oculusVRSession, ovr_GetPredictedDisplayTime(oculusVRSession, 0), ovrTrue);
+    auto pose = this->last_pose_;
 
-    // Find a HMD
-    auto devices = GetDriver()->GetDevices();
-    auto hmd = std::find_if(devices.begin(), devices.end(), [](const std::shared_ptr<IVRDevice>& device_ptr) {return device_ptr->GetDeviceType() == DeviceType::HMD; });
-    if (hmd != devices.end()) {
-        // Found a HMD
-        vr::DriverPose_t hmd_pose = (*hmd)->GetPose();
-
-        // Here we setup some transforms so our controllers are offset from the headset by a small amount so we can see them
-        linalg::vec<float, 3> hmd_position{ (float)hmd_pose.vecPosition[0], (float)hmd_pose.vecPosition[1], (float)hmd_pose.vecPosition[2] };
-        linalg::vec<float, 4> hmd_rotation{ (float)hmd_pose.qRotation.x, (float)hmd_pose.qRotation.y, (float)hmd_pose.qRotation.z, (float)hmd_pose.qRotation.w };
-
-        // Do shaking animation if haptic vibration was requested
-        float controller_y = -0.35f + 0.01f * std::sinf(8 * 3.1415f * vibrate_anim_state_);
-
-        linalg::vec<float, 3> hmd_pose_offset = { 0.f, controller_y, -0.5f };
-
-        hmd_pose_offset = linalg::qrot(hmd_rotation, hmd_pose_offset);
-
-        linalg::vec<float, 3> final_pose = hmd_pose_offset + hmd_position;
-
-        pose.vecPosition[0] = final_pose.x;
-        pose.vecPosition[1] = final_pose.y;
-        pose.vecPosition[2] = final_pose.z;
-
-        pose.qRotation.w = hmd_rotation.w;
-        pose.qRotation.x = hmd_rotation.x;
-        pose.qRotation.y = hmd_rotation.y;
-        pose.qRotation.z = hmd_rotation.z;
+    if (this->handedness_ == Handedness::ANY)
+    {
+        //Position
+        if (oculusVRTrackingState.StatusFlags & ovrStatus_PositionTracked)
+        {
+            pose.vecPosition[0] = oculusVRTrackingState.HeadPose.ThePose.Position.x - GetDriver()->rightOffset.Translation.x;
+            pose.vecPosition[1] = oculusVRTrackingState.HeadPose.ThePose.Position.y - GetDriver()->rightOffset.Translation.y;
+            pose.vecPosition[2] = oculusVRTrackingState.HeadPose.ThePose.Position.z - GetDriver()->rightOffset.Translation.z;
+        }
+        else
+        {
+            pose.poseIsValid = false;
+            pose.result = vr::ETrackingResult::TrackingResult_Fallback_RotationOnly;
+        }
+        //Rotation
+        if (oculusVRTrackingState.StatusFlags & ovrStatus_OrientationTracked)
+        {
+            pose.qRotation.w = oculusVRTrackingState.HeadPose.ThePose.Orientation.w;
+            pose.qRotation.x = oculusVRTrackingState.HeadPose.ThePose.Orientation.x;
+            pose.qRotation.y = oculusVRTrackingState.HeadPose.ThePose.Orientation.y;
+            pose.qRotation.z = oculusVRTrackingState.HeadPose.ThePose.Orientation.z;
+        }
+        else
+        {
+            pose.poseIsValid = false;
+            if (oculusVRTrackingState.StatusFlags & ovrStatus_PositionTracked) { pose.result = vr::ETrackingResult::TrackingResult_Running_OutOfRange; }
+        }
+        GetDriver()->GetDriverHost()->TrackedDevicePoseUpdated(this->device_index_, pose, sizeof(vr::DriverPose_t));
+        this->last_pose_ = pose;
+        return;
     }
 
-    // Post pose
+    //Set default values.
+    pose.poseIsValid = true;
+    pose.result = vr::ETrackingResult::TrackingResult_Running_OK;
+
+    //Position
+    if (oculusVRTrackingState.HandStatusFlags[controllerIndex] & ovrStatus_PositionTracked)
+    {
+        //Translation should be the same on both sides.
+        pose.vecPosition[0] = oculusVRTrackingState.HandPoses[controllerIndex].ThePose.Position.x - GetDriver()->rightOffset.Translation.x;
+        pose.vecPosition[1] = oculusVRTrackingState.HandPoses[controllerIndex].ThePose.Position.y - GetDriver()->rightOffset.Translation.y;
+        pose.vecPosition[2] = oculusVRTrackingState.HandPoses[controllerIndex].ThePose.Position.z - GetDriver()->rightOffset.Translation.z;
+    }
+    else
+    {
+        pose.poseIsValid = false;
+        pose.result = vr::ETrackingResult::TrackingResult_Fallback_RotationOnly;
+    }
+
+    //Rotation
+    if (oculusVRTrackingState.HandStatusFlags[controllerIndex] & ovrStatus_OrientationTracked)
+    {
+        OVR::Posef oculusVRPose = oculusVRTrackingState.HandPoses[controllerIndex].ThePose; //I didn't know how to cast this to OVR::Posef directly so I have assigned it to a variable here.
+        OVR::Quatf poseWithOffset = oculusVRPose.Rotation * (this->handedness_ == Handedness::LEFT ? GetDriver()->leftOffset : GetDriver()->rightOffset).Rotation;
+        pose.qRotation.w = poseWithOffset.w;
+        pose.qRotation.x = poseWithOffset.x;
+        pose.qRotation.y = poseWithOffset.y;
+        pose.qRotation.z = poseWithOffset.z;
+    }
+    else
+    {
+        pose.poseIsValid = false;
+        if (oculusVRTrackingState.HandStatusFlags[controllerIndex] & ovrStatus_PositionTracked) { pose.result = vr::ETrackingResult::TrackingResult_Running_OutOfRange; }
+    }
+
+    //Post pose.
     GetDriver()->GetDriverHost()->TrackedDevicePoseUpdated(this->device_index_, pose, sizeof(vr::DriverPose_t));
     this->last_pose_ = pose;
 }
@@ -86,6 +147,7 @@ vr::TrackedDeviceIndex_t OculusToSteamVR::TrackerDevice::GetDeviceIndex()
     return this->device_index_;
 }
 
+//I originally was going to use the same oculus assets for the icons and models here but to avoid confusion I will use the regular Vive tracker icons.
 vr::EVRInitError OculusToSteamVR::TrackerDevice::Activate(uint32_t unObjectId)
 {
     this->device_index_ = unObjectId;
@@ -95,37 +157,44 @@ vr::EVRInitError OculusToSteamVR::TrackerDevice::Activate(uint32_t unObjectId)
     // Get the properties handle
     auto props = GetDriver()->GetProperties()->TrackedDeviceToPropertyContainer(this->device_index_);
 
-    // Setup inputs and outputs
-    GetDriver()->GetInput()->CreateHapticComponent(props, "/output/haptic", &this->haptic_component_);
-
-    GetDriver()->GetInput()->CreateBooleanComponent(props, "/input/system/click", &this->system_click_component_);
-    GetDriver()->GetInput()->CreateBooleanComponent(props, "/input/system/touch", &this->system_touch_component_);
-
     // Set some universe ID (Must be 2 or higher)
     GetDriver()->GetProperties()->SetUint64Property(props, vr::Prop_CurrentUniverseId_Uint64, 2);
     
     // Set up a model "number" (not needed but good to have)
-    GetDriver()->GetProperties()->SetStringProperty(props, vr::Prop_ModelNumber_String, "example_tracker");
+    GetDriver()->GetProperties()->SetStringProperty(props, vr::Prop_ModelNumber_String, "oculus_touch_tracker");
 
     // Opt out of hand selection
     GetDriver()->GetProperties()->SetInt32Property(props, vr::Prop_ControllerRoleHint_Int32, vr::ETrackedControllerRole::TrackedControllerRole_OptOut);
 
-    // Set up a render model path
-    GetDriver()->GetProperties()->SetStringProperty(props, vr::Prop_RenderModelName_String, "{oculus_to_steamvr}/rendermodels/example_controller");
+    // Set controller profile (not used I don't believe but without this OVR gets angry).
+    GetDriver()->GetProperties()->SetStringProperty(props, vr::Prop_InputProfilePath_String, "{htc}/input/vive_tracker_profile.json");
 
-    // Set controller profile
-    GetDriver()->GetProperties()->SetStringProperty(props, vr::Prop_InputProfilePath_String, "{oculus_to_steamvr}/input/example_tracker_bindings.json");
+    // Set a render model.
+    GetDriver()->GetProperties()->SetStringProperty(props, vr::Prop_RenderModelName_String, "{htc}/rendermodels/vr_tracker_vive_1_0");
 
-    // Set the icon
-    GetDriver()->GetProperties()->SetStringProperty(props, vr::Prop_NamedIconPathDeviceReady_String, "{oculus_to_steamvr}/icons/tracker_ready.png");
+    //Icons
+    std::string handString = this->handedness_ == Handedness::LEFT ? "left" : "right";
+    GetDriver()->GetProperties()->SetStringProperty(props, vr::Prop_NamedIconPathDeviceReady_String, "{htc}/icons/tracker_status_ready.png");
+    GetDriver()->GetProperties()->SetStringProperty(props, vr::Prop_NamedIconPathDeviceOff_String, "{htc}/icons/tracker_status_off.png");
+    GetDriver()->GetProperties()->SetStringProperty(props, vr::Prop_NamedIconPathDeviceSearching_String, "{htc}/icons/tracker_status_searching.gif");
+    GetDriver()->GetProperties()->SetStringProperty(props, vr::Prop_NamedIconPathDeviceSearchingAlert_String, "{htc}/icons/tracker_status_searching_alert.gif");
+    GetDriver()->GetProperties()->SetStringProperty(props, vr::Prop_NamedIconPathDeviceReadyAlert_String, "{htc}/icons/tracker_status_ready_alert.png");
+    GetDriver()->GetProperties()->SetStringProperty(props, vr::Prop_NamedIconPathDeviceNotReady_String, "{htc}/icons/tracker_status_error.png");
+    GetDriver()->GetProperties()->SetStringProperty(props, vr::Prop_NamedIconPathDeviceStandby_String, "{htc}/icons/tracker_status_standby.png");
+    GetDriver()->GetProperties()->SetStringProperty(props, vr::Prop_NamedIconPathDeviceAlertLow_String, "{htc}/icons/tracker_status_ready_low.png");
 
-    GetDriver()->GetProperties()->SetStringProperty(props, vr::Prop_NamedIconPathDeviceOff_String, "{oculus_to_steamvr}/icons/tracker_not_ready.png");
-    GetDriver()->GetProperties()->SetStringProperty(props, vr::Prop_NamedIconPathDeviceSearching_String, "{oculus_to_steamvr}/icons/tracker_not_ready.png");
-    GetDriver()->GetProperties()->SetStringProperty(props, vr::Prop_NamedIconPathDeviceSearchingAlert_String, "{oculus_to_steamvr}/icons/tracker_not_ready.png");
-    GetDriver()->GetProperties()->SetStringProperty(props, vr::Prop_NamedIconPathDeviceReadyAlert_String, "{oculus_to_steamvr}/icons/tracker_not_ready.png");
-    GetDriver()->GetProperties()->SetStringProperty(props, vr::Prop_NamedIconPathDeviceNotReady_String, "{oculus_to_steamvr}/icons/tracker_not_ready.png");
-    GetDriver()->GetProperties()->SetStringProperty(props, vr::Prop_NamedIconPathDeviceStandby_String, "{oculus_to_steamvr}/icons/tracker_not_ready.png");
-    GetDriver()->GetProperties()->SetStringProperty(props, vr::Prop_NamedIconPathDeviceAlertLow_String, "{oculus_to_steamvr}/icons/tracker_not_ready.png");
+    vr::DriverPose_t defaultPose = IVRDevice::MakeDefaultPose();
+    defaultPose.vecPosition[0] =
+        defaultPose.vecPosition[1] =
+        defaultPose.vecPosition[2] =
+        defaultPose.qRotation.x =
+        defaultPose.qRotation.y =
+        defaultPose.qRotation.z =
+        0;
+    defaultPose.qRotation.w = 1;
+    defaultPose.deviceIsConnected = enabled;
+    GetDriver()->GetDriverHost()->TrackedDevicePoseUpdated(this->device_index_, defaultPose, sizeof(vr::DriverPose_t));
+    this->last_pose_ = defaultPose;
 
     return vr::EVRInitError::VRInitError_None;
 }

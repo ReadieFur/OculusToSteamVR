@@ -16,6 +16,9 @@ namespace OculusToSteamVR {
             ~TrackingReferenceDevice() = default;
 
             // Inherited via IVRDevice
+            virtual void Enable() override { enabled = true; };
+            virtual void Disable() override { enabled = false; };
+
             virtual std::string GetSerial() override;
             virtual void Update() override;
             virtual vr::TrackedDeviceIndex_t GetDeviceIndex() override;

@@ -114,13 +114,14 @@ vr::EVRInitError OculusToSteamVR::VRDriver::Init(vr::IVRDriverContext* pDriverCo
         Cleanup();
     }, GetDriver(), oculusVRSession, oculusVRLuid).detach();
 
-    //Add controllers
+    //Add controllers.
     //this->AddDevice(std::make_shared<ControllerDevice>("oculus_to_steamvr_controller_ref", ControllerDevice::Handedness::ANY));
-    this->AddDevice(std::make_shared<ControllerDevice>(std::string(oculusHMDDesc.SerialNumber) + "_Controller_Right", ControllerDevice::Handedness::RIGHT));
-    this->AddDevice(std::make_shared<ControllerDevice>(std::string(oculusHMDDesc.SerialNumber) + "_Controller_Left", ControllerDevice::Handedness::LEFT));
+    this->AddDevice(std::make_shared<ControllerDevice>(std::string(oculusHMDDesc.SerialNumber) + "_Controller_Right", Handedness::RIGHT));
+    this->AddDevice(std::make_shared<ControllerDevice>(std::string(oculusHMDDesc.SerialNumber) + "_Controller_Left", Handedness::LEFT));
 
-    //Add a tracker.
-    //this->AddDevice(std::make_shared<TrackerDevice>("oculus_to_steamvr_TrackerDevice"));
+    //Add trackers (the controllers but disabled by default).
+    this->AddDevice(std::make_shared<TrackerDevice>(std::string(oculusHMDDesc.SerialNumber) + "_Controller_Right_Tracker", Handedness::RIGHT));
+    this->AddDevice(std::make_shared<TrackerDevice>(std::string(oculusHMDDesc.SerialNumber) + "_Controller_Left_Tracker", Handedness::LEFT));
 
     //Add a tracking reference. I would like to use this to indicate the 0 point/hmd location for calibration but I can't seem to get a model to appear for this so I am currently using a controller.
     for (unsigned int i = 0; i < ovr_GetTrackerCount(oculusVRSession); i++)
@@ -134,7 +135,18 @@ vr::EVRInitError OculusToSteamVR::VRDriver::Init(vr::IVRDriverContext* pDriverCo
         steamVRPose.qRotation.x = oculusPose.LeveledPose.Orientation.x;
         steamVRPose.qRotation.y = oculusPose.LeveledPose.Orientation.y;
         steamVRPose.qRotation.z = oculusPose.LeveledPose.Orientation.z;
-        this->AddDevice(std::make_shared<TrackingReferenceDevice>("oculus_to_steamvr_TrackingReference_" + std::to_string(i), steamVRPose));
+        this->AddDevice(std::make_shared<TrackingReferenceDevice>(std::string(oculusHMDDesc.SerialNumber) + "_Tracking_Reference_" + std::to_string(i), steamVRPose));
+    }
+
+    //This happens too soon.
+    vr::EVRSettingsError err = vr::EVRSettingsError::VRSettingsError_None;
+    bool _inControllerMode = vr::VRSettings()->GetBool(settings_key_.c_str(), "in_controller_mode", &err);
+    _inControllerMode = err != vr::EVRSettingsError::VRSettingsError_None ? true : _inControllerMode;
+    for (auto& device : this->devices_)
+    {
+        //Deactivate the devices based on the input mode.
+        if (device->GetDeviceType() == DeviceType::CONTROLLER && !_inControllerMode) { device->Disable(); }
+        else if (device->GetDeviceType() == DeviceType::TRACKER && _inControllerMode) { device->Disable(); }
     }
 
     Log("OculusToSteamVR Loaded Successfully");
@@ -321,6 +333,23 @@ void OculusToSteamVR::VRDriver::RunFrame()
                     leftOffset.Rotation *= OVR::Quat<float>::FromRotationVector(OVR::Vector3<float>(0.0f, 0.0f, rotationToAdd));
                 }
             }
+        }
+
+        //Toggle device mode.
+        if (modeToggleButtonTime < 1.0f) { modeToggleButtonTime += GetDriver()->GetLastFrameTime().count() / 1000.f; }
+        if (inputState.Buttons == ovrButton_Enter + ovrButton_RThumb && modeToggleButtonTime >= 1.0f)
+        {
+            for (auto& device : this->devices_)
+            {
+                if (device->GetDeviceType() == DeviceType::CONTROLLER && inControllerMode) { device->Disable(); }
+                else if (device->GetDeviceType() == DeviceType::CONTROLLER && !inControllerMode) { device->Enable(); }
+                else if (device->GetDeviceType() == DeviceType::TRACKER && inControllerMode) { device->Enable(); }
+                else if (device->GetDeviceType() == DeviceType::TRACKER && !inControllerMode) { device->Disable(); }
+            }
+            inControllerMode = !inControllerMode;
+            vr::EVRSettingsError err = vr::EVRSettingsError::VRSettingsError_None; //Ignore all errors for now.
+            vr::VRSettings()->SetBool(settings_key_.c_str(), "in_controller_mode", inControllerMode, &err);
+            modeToggleButtonTime = 0.0f;
         }
     }
 

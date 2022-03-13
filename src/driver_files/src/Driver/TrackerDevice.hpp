@@ -12,10 +12,13 @@ namespace OculusToSteamVR {
     class TrackerDevice : public IVRDevice {
         public:
 
-            TrackerDevice(std::string serial);
+            TrackerDevice(std::string serial, Handedness handedness = Handedness::ANY);
             ~TrackerDevice() = default;
 
             // Inherited via IVRDevice
+            virtual void Enable() override;
+            virtual void Disable() override;
+
             virtual std::string GetSerial() override;
             virtual void Update() override;
             virtual vr::TrackedDeviceIndex_t GetDeviceIndex() override;
@@ -31,6 +34,7 @@ namespace OculusToSteamVR {
     private:
         vr::TrackedDeviceIndex_t device_index_ = vr::k_unTrackedDeviceIndexInvalid;
         std::string serial_;
+        Handedness handedness_;
 
         vr::DriverPose_t last_pose_ = IVRDevice::MakeDefaultPose();
 
