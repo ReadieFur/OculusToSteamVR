@@ -67,6 +67,9 @@ void OculusToSteamVR::ControllerDevice::Update()
     const ovrSession oculusVRSession = GetDriver()->oculusVRSession;
     ovrTrackingState oculusVRTrackingState = ovr_GetTrackingState(oculusVRSession, ovr_GetPredictedDisplayTime(oculusVRSession, 0), ovrTrue);
     auto pose = this->last_pose_;
+    //Set default values.
+    pose.poseIsValid = true;
+    pose.result = vr::ETrackingResult::TrackingResult_Running_OK;
 
     if (this->handedness_ == Handedness::ANY)
     {
@@ -100,10 +103,6 @@ void OculusToSteamVR::ControllerDevice::Update()
         return;
     }
 
-    //Set default values.
-    pose.poseIsValid = true;
-    pose.result = vr::ETrackingResult::TrackingResult_Running_OK;
-
     //Position
     if (oculusVRTrackingState.HandStatusFlags[controllerIndex] & ovrStatus_PositionTracked)
     {
@@ -123,6 +122,7 @@ void OculusToSteamVR::ControllerDevice::Update()
     {
         OVR::Posef oculusVRPose = oculusVRTrackingState.HandPoses[controllerIndex].ThePose; //I didn't know how to cast this to OVR::Posef directly so I have assigned it to a variable here.
         OVR::Quatf poseWithOffset = oculusVRPose.Rotation * (this->handedness_ == Handedness::LEFT ? GetDriver()->leftOffset : GetDriver()->rightOffset).Rotation;
+        poseWithOffset.Normalize();
         pose.qRotation.w = poseWithOffset.w;
         pose.qRotation.x = poseWithOffset.x;
         pose.qRotation.y = poseWithOffset.y;
@@ -197,6 +197,7 @@ vr::EVRInitError OculusToSteamVR::ControllerDevice::Activate(uint32_t unObjectId
 
     // Get the properties handle
     auto props = GetDriver()->GetProperties()->TrackedDeviceToPropertyContainer(this->device_index_);
+    GetDriver()->GetProperties()->SetStringProperty(props, vr::Prop_TrackingSystemName_String, "oculus");
 
     if (this->handedness_ != Handedness::ANY)
     {
