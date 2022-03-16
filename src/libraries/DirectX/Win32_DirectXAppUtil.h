@@ -419,6 +419,12 @@ struct DirectX11
             // true => we'll attempt to retry for ovrError_DisplayLost
             if (!MainLoop(true, driver, session, luid))
                 break;
+
+            //However if OVR has requested to quit then don't retry.
+            ovrSessionStatus oculusVRSessionStatus;
+            ovr_GetSessionStatus(session, &oculusVRSessionStatus);
+            if (oculusVRSessionStatus.ShouldQuit) { break; }
+
             //_driver->Log(GetLastErrorAsString());
             driver->Log("Retry");
             // Sleep a bit before retrying to reduce CPU load while the HMD is disconnected

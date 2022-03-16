@@ -48,8 +48,6 @@ vr::EVRInitError OculusToSteamVR::VRDriver::Init(vr::IVRDriverContext* pDriverCo
     }
     oculusVRInitialized = true;
 
-    const ovrHmdDesc oculusHMDDesc = ovr_GetHmdDesc(oculusVRSession);
-
     //Set oculus tracking type.
     ovr_SetTrackingOriginType(oculusVRSession, ovrTrackingOrigin_EyeLevel);
     ovrPosef oculusVROrigin;
@@ -97,33 +95,31 @@ vr::EVRInitError OculusToSteamVR::VRDriver::Init(vr::IVRDriverContext* pDriverCo
 
     //Setup rendering to oculus, required to get focus and obtain input.
     //A nice bit of threaded mess here :)
-    //I caused myself a lot of pain and fustration becuase this wasn't working and the error codes I was getting wer pretty useless
+    //I caused myself a lot of pain and fustration becuase this wasn't working and the error codes I was getting were pretty useless
     //In the end I think the error was logical, where I had added a logging line caused the render loop to break early because I forgot to wrap thee two lines in brackets :/.
     //I pass in the driver here becuase it seems that GetDriver doesn't work across threads, despite the driver being static (I believe). My multithreaded knowledge is limited.
-    std::thread([this](std::shared_ptr<OculusToSteamVR::IVRDriver> driver, ovrSession session, ovrGraphicsLuid luid)
+    vr::EVRInitError threadInitResult = vr::VRInitError_Unknown;
+    std::thread([this](std::shared_ptr<OculusToSteamVR::IVRDriver> driver, ovrSession session, ovrGraphicsLuid luid, vr::EVRInitError* _threadInitResult) mutable
     {
         while (driver->active)
         {
-            if (!DIRECTX.InitWindow(GetModuleHandle(NULL), L"OculusToSteamVR [DO NOT CLOSE]")) { return vr::VRInitError_Driver_Failed; }
+            if (!DIRECTX.InitWindow(GetModuleHandle(NULL), L"OculusToSteamVR [DO NOT CLOSE]"))
+            {
+                *_threadInitResult = vr::VRInitError_Driver_Failed;
+                return;
+            }
+            *_threadInitResult = vr::VRInitError_None;
             DIRECTX.Run(OculusRenderLoop, driver, session, luid);
-            
-            ovrSessionStatus oculusVRSessionStatus;
-            ovr_GetSessionStatus(session, &oculusVRSessionStatus);
-            if (oculusVRSessionStatus.ShouldQuit) { break; }
         }
         Cleanup();
-    }, GetDriver(), oculusVRSession, oculusVRLuid).detach();
+        return;
+    }, GetDriver(), oculusVRSession, oculusVRLuid, &threadInitResult).detach();
+    while (threadInitResult == vr::VRInitError_Unknown) { Sleep(10); }
+    if (threadInitResult != vr::VRInitError_None) { return threadInitResult; }
 
-    //Add controllers.
-    //this->AddDevice(std::make_shared<ControllerDevice>("oculus_to_steamvr_controller_ref", ControllerDevice::Handedness::ANY));
-    this->AddDevice(std::make_shared<ControllerDevice>(std::string(oculusHMDDesc.SerialNumber) + "_Controller_Right", Handedness::RIGHT));
-    this->AddDevice(std::make_shared<ControllerDevice>(std::string(oculusHMDDesc.SerialNumber) + "_Controller_Left", Handedness::LEFT));
+    const ovrHmdDesc oculusHMDDesc = ovr_GetHmdDesc(oculusVRSession);
 
-    //Add trackers (the controllers but disabled by default).
-    this->AddDevice(std::make_shared<TrackerDevice>(std::string(oculusHMDDesc.SerialNumber) + "_Controller_Right_Tracker", Handedness::RIGHT));
-    this->AddDevice(std::make_shared<TrackerDevice>(std::string(oculusHMDDesc.SerialNumber) + "_Controller_Left_Tracker", Handedness::LEFT));
-
-    //Add a tracking reference. I would like to use this to indicate the 0 point/hmd location for calibration but I can't seem to get a model to appear for this so I am currently using a controller.
+    //Add tracking references.
     for (unsigned int i = 0; i < ovr_GetTrackerCount(oculusVRSession); i++)
     {
         ovrTrackerPose oculusPose = ovr_GetTrackerPose(oculusVRSession, i);
@@ -138,7 +134,14 @@ vr::EVRInitError OculusToSteamVR::VRDriver::Init(vr::IVRDriverContext* pDriverCo
         this->AddDevice(std::make_shared<TrackingReferenceDevice>(std::string(oculusHMDDesc.SerialNumber) + "_Tracking_Reference_" + std::to_string(i), steamVRPose));
     }
 
-    //This happens too soon.
+    //Add controllers.
+    this->AddDevice(std::make_shared<ControllerDevice>(std::string(oculusHMDDesc.SerialNumber) + "_Controller_Left", Handedness::LEFT));
+    this->AddDevice(std::make_shared<ControllerDevice>(std::string(oculusHMDDesc.SerialNumber) + "_Controller_Right", Handedness::RIGHT));
+
+    //Add trackers (the controllers but disabled by default).
+    this->AddDevice(std::make_shared<TrackerDevice>(std::string(oculusHMDDesc.SerialNumber) + "_Tracker_Left", Handedness::LEFT));
+    this->AddDevice(std::make_shared<TrackerDevice>(std::string(oculusHMDDesc.SerialNumber) + "_Tracker_Right", Handedness::RIGHT));
+
     vr::EVRSettingsError err = vr::EVRSettingsError::VRSettingsError_None;
     bool _inControllerMode = vr::VRSettings()->GetBool(settings_key_.c_str(), "in_controller_mode", &err);
     _inControllerMode = err != vr::EVRSettingsError::VRSettingsError_None ? true : _inControllerMode;
@@ -165,6 +168,7 @@ void OculusToSteamVR::VRDriver::Cleanup()
     }
 }
 
+bool l = false;
 void OculusToSteamVR::VRDriver::RunFrame()
 {
     // Collect events
