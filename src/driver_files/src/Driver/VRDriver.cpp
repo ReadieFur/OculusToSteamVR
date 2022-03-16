@@ -134,22 +134,20 @@ vr::EVRInitError OculusToSteamVR::VRDriver::Init(vr::IVRDriverContext* pDriverCo
         this->AddDevice(std::make_shared<TrackingReferenceDevice>(std::string(oculusHMDDesc.SerialNumber) + "_Tracking_Reference_" + std::to_string(i), steamVRPose));
     }
 
-    //Add controllers.
-    this->AddDevice(std::make_shared<ControllerDevice>(std::string(oculusHMDDesc.SerialNumber) + "_Controller_Left", Handedness::LEFT));
-    this->AddDevice(std::make_shared<ControllerDevice>(std::string(oculusHMDDesc.SerialNumber) + "_Controller_Right", Handedness::RIGHT));
-
-    //Add trackers (the controllers but disabled by default).
-    this->AddDevice(std::make_shared<TrackerDevice>(std::string(oculusHMDDesc.SerialNumber) + "_Tracker_Left", Handedness::LEFT));
-    this->AddDevice(std::make_shared<TrackerDevice>(std::string(oculusHMDDesc.SerialNumber) + "_Tracker_Right", Handedness::RIGHT));
-
     vr::EVRSettingsError err = vr::EVRSettingsError::VRSettingsError_None;
     bool _inControllerMode = vr::VRSettings()->GetBool(settings_key_.c_str(), "in_controller_mode", &err);
     _inControllerMode = err != vr::EVRSettingsError::VRSettingsError_None ? true : _inControllerMode;
-    for (auto& device : this->devices_)
+    if (_inControllerMode)
     {
-        //Deactivate the devices based on the input mode.
-        if (device->GetDeviceType() == DeviceType::CONTROLLER && !_inControllerMode) { device->Disable(); }
-        else if (device->GetDeviceType() == DeviceType::TRACKER && _inControllerMode) { device->Disable(); }
+        //Add controllers.
+        this->AddDevice(std::make_shared<ControllerDevice>(std::string(oculusHMDDesc.SerialNumber) + "_Controller_Left", Handedness::LEFT));
+        this->AddDevice(std::make_shared<ControllerDevice>(std::string(oculusHMDDesc.SerialNumber) + "_Controller_Right", Handedness::RIGHT));
+    }
+    else
+    {
+        //Add trackers (the controllers but disabled by default).
+        this->AddDevice(std::make_shared<TrackerDevice>(std::string(oculusHMDDesc.SerialNumber) + "_Tracker_Left", Handedness::LEFT));
+        this->AddDevice(std::make_shared<TrackerDevice>(std::string(oculusHMDDesc.SerialNumber) + "_Tracker_Right", Handedness::RIGHT));
     }
 
     Log("OculusToSteamVR Loaded Successfully");
@@ -336,6 +334,10 @@ void OculusToSteamVR::VRDriver::RunFrame()
                     rightOffset.Rotation *= OVR::Quat<float>::FromRotationVector(OVR::Vector3<float>(0.0f, 0.0f, -rotationToAdd));
                     leftOffset.Rotation *= OVR::Quat<float>::FromRotationVector(OVR::Vector3<float>(0.0f, 0.0f, rotationToAdd));
                 }
+
+                eulerAnglesOffset.Normalize();
+                rightOffset.Rotation.Normalize();
+                leftOffset.Rotation.Normalize();
             }
         }
 
@@ -343,13 +345,31 @@ void OculusToSteamVR::VRDriver::RunFrame()
         if (modeToggleButtonTime < 1.0f) { modeToggleButtonTime += GetDriver()->GetLastFrameTime().count() / 1000.f; }
         if (inputState.Buttons == ovrButton_Enter + ovrButton_RThumb && modeToggleButtonTime >= 1.0f)
         {
+            bool controllersFound = false;
+            bool trackersFound = false;
             for (auto& device : this->devices_)
             {
-                if (device->GetDeviceType() == DeviceType::CONTROLLER && inControllerMode) { device->Disable(); }
-                else if (device->GetDeviceType() == DeviceType::CONTROLLER && !inControllerMode) { device->Enable(); }
-                else if (device->GetDeviceType() == DeviceType::TRACKER && inControllerMode) { device->Enable(); }
-                else if (device->GetDeviceType() == DeviceType::TRACKER && !inControllerMode) { device->Disable(); }
+                if (device->GetDeviceType() == DeviceType::CONTROLLER && inControllerMode) { controllersFound = true; device->Disable(); }
+                else if (device->GetDeviceType() == DeviceType::CONTROLLER && !inControllerMode) { controllersFound = true; device->Enable(); }
+                else if (device->GetDeviceType() == DeviceType::TRACKER && inControllerMode) { trackersFound = true; device->Enable(); }
+                else if (device->GetDeviceType() == DeviceType::TRACKER && !inControllerMode) { trackersFound = true; device->Disable(); }
             }
+
+            if (!inControllerMode && !controllersFound) //Switching to controller mode.
+            {
+                //Add controllers.
+                const ovrHmdDesc oculusHMDDesc = ovr_GetHmdDesc(oculusVRSession);
+                this->AddDevice(std::make_shared<ControllerDevice>(std::string(oculusHMDDesc.SerialNumber) + "_Controller_Left", Handedness::LEFT));
+                this->AddDevice(std::make_shared<ControllerDevice>(std::string(oculusHMDDesc.SerialNumber) + "_Controller_Right", Handedness::RIGHT));
+            }
+            else if (inControllerMode && !trackersFound) //Switching to tracker mode.
+            {
+                //Add trackers (the controllers but disabled by default).
+                const ovrHmdDesc oculusHMDDesc = ovr_GetHmdDesc(oculusVRSession);
+                this->AddDevice(std::make_shared<TrackerDevice>(std::string(oculusHMDDesc.SerialNumber) + "_Tracker_Left", Handedness::LEFT));
+                this->AddDevice(std::make_shared<TrackerDevice>(std::string(oculusHMDDesc.SerialNumber) + "_Tracker_Right", Handedness::RIGHT));
+            }
+
             inControllerMode = !inControllerMode;
             vr::EVRSettingsError err = vr::EVRSettingsError::VRSettingsError_None; //Ignore all errors for now.
             vr::VRSettings()->SetBool(settings_key_.c_str(), "in_controller_mode", inControllerMode, &err);
