@@ -277,6 +277,9 @@ vr::EVRInitError OculusToSteamVR::ControllerDevice::Activate(uint32_t unObjectId
     // Set controller profile
     GetDriver()->GetProperties()->SetStringProperty(props, vr::Prop_InputProfilePath_String, "{oculus}/input/touch_profile.json");
 
+    //Try to get OpenVR (SteamVR) to prefer other controllers over these ones (incase the user wants to use this plugin in tracker mode).
+    //vr::VRProperties()->SetInt32Property(props, vr::Prop_ControllerHandSelectionPriority_Int32, 0);
+
     //Icons
     std::string handString = this->handedness_ == Handedness::LEFT ? "left" : "right";
     GetDriver()->GetProperties()->SetStringProperty(props, vr::Prop_NamedIconPathDeviceReady_String, ("{oculus}/icons/" + oculusHMDString + "_" + handString + "_controller_ready.png").c_str());
