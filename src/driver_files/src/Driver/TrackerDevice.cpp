@@ -75,9 +75,21 @@ void OculusToSteamVR::TrackerDevice::Update()
         //Position
         if (oculusVRTrackingState.StatusFlags & ovrStatus_PositionTracked)
         {
-            pose.vecPosition[0] = oculusVRTrackingState.HeadPose.ThePose.Position.x - GetDriver()->rightOffset.Translation.x;
+            //https://stackoverflow.com/questions/34372480/rotate-point-about-another-point-in-degrees-python
+            float x = cos(GetDriver()->worldOffsetRadians) *
+                oculusVRTrackingState.HeadPose.ThePose.Position.x -
+                sin(GetDriver()->worldOffsetRadians) *
+                oculusVRTrackingState.HeadPose.ThePose.Position.x;
+            float z = sin(GetDriver()->worldOffsetRadians) *
+                oculusVRTrackingState.HeadPose.ThePose.Position.z +
+                cos(GetDriver()->worldOffsetRadians) *
+                oculusVRTrackingState.HeadPose.ThePose.Position.z;
+
+            //pose.vecPosition[0] = oculusVRTrackingState.HeadPose.ThePose.Position.x - GetDriver()->rightOffset.Translation.x;
+            pose.vecPosition[0] = x - GetDriver()->rightOffset.Translation.x;
             pose.vecPosition[1] = oculusVRTrackingState.HeadPose.ThePose.Position.y - GetDriver()->rightOffset.Translation.y;
-            pose.vecPosition[2] = oculusVRTrackingState.HeadPose.ThePose.Position.z - GetDriver()->rightOffset.Translation.z;
+            //pose.vecPosition[2] = oculusVRTrackingState.HeadPose.ThePose.Position.z - GetDriver()->rightOffset.Translation.z;
+            pose.vecPosition[2] = z - GetDriver()->rightOffset.Translation.z;
         }
         else
         {
@@ -105,10 +117,21 @@ void OculusToSteamVR::TrackerDevice::Update()
     //Position
     if (oculusVRTrackingState.HandStatusFlags[controllerIndex] & ovrStatus_PositionTracked)
     {
+        float x = cos(GetDriver()->worldOffsetRadians) *
+            oculusVRTrackingState.HandPoses[controllerIndex].ThePose.Position.x -
+            sin(GetDriver()->worldOffsetRadians) *
+            oculusVRTrackingState.HandPoses[controllerIndex].ThePose.Position.x;
+        float z = sin(GetDriver()->worldOffsetRadians) *
+            oculusVRTrackingState.HandPoses[controllerIndex].ThePose.Position.z +
+            cos(GetDriver()->worldOffsetRadians) *
+            oculusVRTrackingState.HandPoses[controllerIndex].ThePose.Position.z;
+
         //Translation should be the same on both sides.
-        pose.vecPosition[0] = oculusVRTrackingState.HandPoses[controllerIndex].ThePose.Position.x - GetDriver()->rightOffset.Translation.x;
+        //pose.vecPosition[0] = oculusVRTrackingState.HandPoses[controllerIndex].ThePose.Position.x - GetDriver()->rightOffset.Translation.x;
+        pose.vecPosition[0] = x - GetDriver()->rightOffset.Translation.x;
         pose.vecPosition[1] = oculusVRTrackingState.HandPoses[controllerIndex].ThePose.Position.y - GetDriver()->rightOffset.Translation.y;
-        pose.vecPosition[2] = oculusVRTrackingState.HandPoses[controllerIndex].ThePose.Position.z - GetDriver()->rightOffset.Translation.z;
+        //pose.vecPosition[2] = oculusVRTrackingState.HandPoses[controllerIndex].ThePose.Position.z - GetDriver()->rightOffset.Translation.z;
+        pose.vecPosition[2] = z - GetDriver()->rightOffset.Translation.z;
     }
     else
     {

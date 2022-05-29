@@ -18,6 +18,7 @@ namespace OculusToSteamVR {
         ovrSession oculusVRSession;
         OVR::Posef rightOffset;
         OVR::Posef leftOffset;
+        float worldOffsetRadians;
 
         /// <summary>
         /// Returns all devices being managed by this driver

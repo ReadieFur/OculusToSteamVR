@@ -42,7 +42,7 @@ namespace OculusToSteamVR {
         bool oculusVRInitialized = false;
         bool inControllerMode = true;
         bool isManuallyCalibrating = false;
-        bool isCalibratingPosition = true;
+        int calibrationMode = 0;
         float calibrationButtonTime = 1.0f;
         /*I'm storing the rotation offset in euler angles becuase when I was trying to load the values back in as quaternions
         I couldn't flip the rotation correctly for the left hand, very likley due to my limited knowledge with quaternions.*/

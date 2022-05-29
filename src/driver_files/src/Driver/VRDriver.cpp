@@ -5,8 +5,8 @@
 #include <Driver/TrackingReferenceDevice.hpp>
 #include <thread>
 #include "OculusTexture.hpp"
-#include <OVR_Math.h>
 #include <typeinfo>
+#include <DirectXMath.h>
 
 vr::EVRInitError OculusToSteamVR::VRDriver::Init(vr::IVRDriverContext* pDriverContext)
 {
@@ -18,19 +18,19 @@ vr::EVRInitError OculusToSteamVR::VRDriver::Init(vr::IVRDriverContext* pDriverCo
     active = true;
     Log("Activating OculusToSteamVR...");
 
-    ovrInitParams initParams = { ovrInit_RequestVersion | ovrInit_FocusAware, OVR_MINOR_VERSION, NULL, 0, 0 };
+    ovrInitParams initParams = { ovrInit_RequestVersion | ovrInit_FocusAware | ovrInit_Invisible, OVR_MINOR_VERSION, NULL, 0, 0 };;
     ovrResult oculusVRResult;
-    //Try to initialize up to 3 times.
-    for (int i = 0; i < 3; i++)
+    //Try to initialize up to 10 times.
+    for (int i = 0; i < 10; i++)
     {
         oculusVRResult = ovr_Initialize(&initParams);
         if (OVR_FAILURE(oculusVRResult))
         {
             //https://developer.oculus.com/reference/libovr/v32/o_v_r_error_code_8h/
-            Log("Failed to initalize OVR. Code " + std::to_string(oculusVRResult) + ". Attempt " + std::to_string(i + 1) + "/3.");
-            if (i == 2) { return vr::VRInitError_Driver_Failed; }
+            Log("Failed to initalize OVR. Code " + std::to_string(oculusVRResult) + ". Attempt " + std::to_string(i + 1) + "/10.");
+            if (i == 9) return vr::VRInitError_Driver_Failed;
         }
-        else { break; }
+        else break;
         Sleep(1000); //If oculus failed because it's busy, give it a moment to complete it's tasks.
     }
     ovrGraphicsLuid oculusVRLuid;
@@ -82,6 +82,7 @@ vr::EVRInitError OculusToSteamVR::VRDriver::Init(vr::IVRDriverContext* pDriverCo
         -eulerAnglesOffset.y,
         -eulerAnglesOffset.z
     ));
+    worldOffsetRadians = XMConvertToRadians(GetSettingsFloat("offset_world_r", 0));
     Log(
         "Loaded offset:" +
         std::string(" px=") + std::to_string(rightOffset.Translation.x) +
@@ -90,7 +91,8 @@ vr::EVRInitError OculusToSteamVR::VRDriver::Init(vr::IVRDriverContext* pDriverCo
         //std::string(" rw=") + std::to_string(rightOffset.Rotation.w) +
         std::string(" rx=") + std::to_string(eulerAnglesOffset.x) +
         std::string(" ry=") + std::to_string(eulerAnglesOffset.y) +
-        std::string(" rz=") + std::to_string(eulerAnglesOffset.z)
+        std::string(" rz=") + std::to_string(eulerAnglesOffset.z) +
+        std::string(" wr=") + std::to_string(worldOffsetRadians)
     );
 
     //Setup rendering to oculus, required to get focus and obtain input.
@@ -133,6 +135,8 @@ vr::EVRInitError OculusToSteamVR::VRDriver::Init(vr::IVRDriverContext* pDriverCo
         steamVRPose.qRotation.z = oculusPose.LeveledPose.Orientation.z;
         this->AddDevice(std::make_shared<TrackingReferenceDevice>(std::string(oculusHMDDesc.SerialNumber) + "_Tracking_Reference_" + std::to_string(i), steamVRPose));
     }
+
+    this->AddDevice(std::make_shared<TrackerDevice>(std::string(oculusHMDDesc.SerialNumber) + "_Tracker_HMD", Handedness::ANY));
 
     vr::EVRSettingsError err = vr::EVRSettingsError::VRSettingsError_None;
     bool _inControllerMode = vr::VRSettings()->GetBool(settings_key_.c_str(), "in_controller_mode", &err);
@@ -210,6 +214,7 @@ void OculusToSteamVR::VRDriver::RunFrame()
                 vr::VRSettings()->SetFloat(settings_key_.c_str(), "offset_rx", eulerAnglesOffset.x, &err);
                 vr::VRSettings()->SetFloat(settings_key_.c_str(), "offset_ry", eulerAnglesOffset.y, &err);
                 vr::VRSettings()->SetFloat(settings_key_.c_str(), "offset_rz", eulerAnglesOffset.z, &err);
+                vr::VRSettings()->SetFloat(settings_key_.c_str(), "offset_world_r", XMConvertToDegrees(worldOffsetRadians), &err);
                 Log(
                     "Offset set to:" +
                     std::string(" px=") + std::to_string(rightOffset.Translation.x) +
@@ -218,21 +223,22 @@ void OculusToSteamVR::VRDriver::RunFrame()
                     //std::string(" rw=") + std::to_string(rightOffset.Rotation.w) +
                     std::string(" rx=") + std::to_string(eulerAnglesOffset.x) +
                     std::string(" ry=") + std::to_string(eulerAnglesOffset.y) +
-                    std::string(" rz=") + std::to_string(eulerAnglesOffset.z)
+                    std::string(" rz=") + std::to_string(eulerAnglesOffset.z) +
+                    std::string(" wr=") + std::to_string(XMConvertToDegrees(worldOffsetRadians))
                 );
             }
-            isCalibratingPosition = true; //Default to always start with position calibration.
+            calibrationMode = 0; //Default to always start with position calibration.
             isManuallyCalibrating = !isManuallyCalibrating;
             calibrationButtonTime = 0.0f;
         }
         //If calibration toggle buttons are pressed, don't move the controllers.
         if (isManuallyCalibrating && (calibrationButtonTime >= 1.0f || !calibrationKeysPressed))
         {
-            //Check if we should switch between position and rotation calibration modes.
-            if (inputState.IndexTrigger[0] >= 0.9f || inputState.IndexTrigger[1] >= 0.9f) { isCalibratingPosition = !isCalibratingPosition; }
+            //Check if we should switch calibration modes.
+            if (inputState.IndexTrigger[0] >= 0.9f || inputState.IndexTrigger[1] >= 0.9f) { calibrationMode = calibrationMode == 2 ? 0 : calibrationMode + 1; }
 
             //I am not using the thumbsticks becuase they are the most likley componenets to be damanged and have drift (as they are in my case).
-            if (isCalibratingPosition) //Position
+            if (calibrationMode == 0) //Position.
             {
                 //Check if the user wants to reset the values to the default.
                 if (inputState.Buttons & ovrButton_LThumb)
@@ -243,7 +249,7 @@ void OculusToSteamVR::VRDriver::RunFrame()
                         0;
                 }
                 //Check if the user wants to reset the values to the last saved values.
-                if (inputState.Buttons & ovrButton_RThumb)
+                else if (inputState.Buttons & ovrButton_RThumb)
                 {
                     vr::EVRSettingsError err = vr::EVRSettingsError::VRSettingsError_None;
                     rightOffset.Translation.x = GetSettingsFloat("offset_px", 0);
@@ -256,14 +262,14 @@ void OculusToSteamVR::VRDriver::RunFrame()
 
                 const float distanceToAdd = 0.001f;
                 if (inputState.Buttons & ovrButton_X) { rightOffset.Translation.y += distanceToAdd; } //Up
-                if (inputState.Buttons & ovrButton_Y) { rightOffset.Translation.y += -distanceToAdd; } //Down
+                else if (inputState.Buttons & ovrButton_Y) { rightOffset.Translation.y += -distanceToAdd; } //Down
                 if (inputState.Buttons & ovrButton_A) { rightOffset.Translation.x += -distanceToAdd; } //Left
-                if (inputState.Buttons & ovrButton_B) { rightOffset.Translation.x += distanceToAdd; } //Right
+                else if (inputState.Buttons & ovrButton_B) { rightOffset.Translation.x += distanceToAdd; } //Right
                 if (inputState.HandTrigger[1] >= 0.9f) { rightOffset.Translation.z += distanceToAdd; } //Forward
-                if (inputState.HandTrigger[0] >= 0.9f) { rightOffset.Translation.z += -distanceToAdd; } //Back
+                else if (inputState.HandTrigger[0] >= 0.9f) { rightOffset.Translation.z += -distanceToAdd; } //Back
                 //leftOffset.Translation = rightOffset.Translation; //Translation should be the same on both sides.
             }
-            else //Rotation
+            else if (calibrationMode == 1) //Rotation.
             {
                 if (inputState.Buttons & ovrButton_LThumb)
                 {
@@ -277,7 +283,7 @@ void OculusToSteamVR::VRDriver::RunFrame()
                         0;
                     eulerAnglesOffset = { 0, 0, 0 };
                 }
-                if (inputState.Buttons & ovrButton_RThumb)
+                else if (inputState.Buttons & ovrButton_RThumb)
                 {
                     eulerAnglesOffset =
                     {
@@ -304,7 +310,7 @@ void OculusToSteamVR::VRDriver::RunFrame()
                     rightOffset.Rotation *= OVR::Quat<float>::FromRotationVector(OVR::Vector3<float>(rotationToAdd, 0.0f, 0.0f));
                     leftOffset.Rotation *= OVR::Quat<float>::FromRotationVector(OVR::Vector3<float>(rotationToAdd, 0.0f, 0.0f));
                 }
-                if (inputState.Buttons & ovrButton_Y) //RX-
+                else if (inputState.Buttons & ovrButton_Y) //RX-
                 {
                     eulerAnglesOffset.x -= rotationToAdd;
                     rightOffset.Rotation *= OVR::Quat<float>::FromRotationVector(OVR::Vector3<float>(-rotationToAdd, 0.0f, 0.0f));
@@ -316,7 +322,7 @@ void OculusToSteamVR::VRDriver::RunFrame()
                     rightOffset.Rotation *= OVR::Quat<float>::FromRotationVector(OVR::Vector3<float>(0.0f, rotationToAdd, 0.0f));
                     leftOffset.Rotation *= OVR::Quat<float>::FromRotationVector(OVR::Vector3<float>(0.0f, -rotationToAdd, 0.0f));
                 }
-                if (inputState.Buttons & ovrButton_B) //RY-
+                else if (inputState.Buttons & ovrButton_B) //RY-
                 {
                     eulerAnglesOffset.y -= rotationToAdd;
                     rightOffset.Rotation *= OVR::Quat<float>::FromRotationVector(OVR::Vector3<float>(0.0f, -rotationToAdd, 0.0f));
@@ -328,7 +334,7 @@ void OculusToSteamVR::VRDriver::RunFrame()
                     rightOffset.Rotation *= OVR::Quat<float>::FromRotationVector(OVR::Vector3<float>(0.0f, 0.0f, rotationToAdd));
                     leftOffset.Rotation *= OVR::Quat<float>::FromRotationVector(OVR::Vector3<float>(0.0f, 0.0f, -rotationToAdd));
                 }
-                if (inputState.HandTrigger[0] >= 0.9f) //RZ-
+                else if (inputState.HandTrigger[0] >= 0.9f) //RZ-
                 {
                     eulerAnglesOffset.z -= rotationToAdd;
                     rightOffset.Rotation *= OVR::Quat<float>::FromRotationVector(OVR::Vector3<float>(0.0f, 0.0f, -rotationToAdd));
@@ -338,6 +344,15 @@ void OculusToSteamVR::VRDriver::RunFrame()
                 eulerAnglesOffset.Normalize();
                 rightOffset.Rotation.Normalize();
                 leftOffset.Rotation.Normalize();
+            }
+            else if (calibrationMode == 2) //World rotation.
+            {
+                if (inputState.Buttons & ovrButton_LThumb) { worldOffsetRadians = 0; }
+                else if (inputState.Buttons & ovrButton_RThumb) { worldOffsetRadians = XMConvertToRadians(GetSettingsFloat("offset_world_r", 0)); }
+
+                constexpr float rotationToAdd = XMConvertToRadians(1.0f); //Store this value in radians (because the calculation I use later uses radians).
+                if (inputState.Buttons & ovrButton_A) { worldOffsetRadians = worldOffsetRadians >= XM_PI ? (-XM_PI + rotationToAdd) : worldOffsetRadians + rotationToAdd; } //RY+
+                else if (inputState.Buttons & ovrButton_B) { worldOffsetRadians = worldOffsetRadians <= -XM_PI ? (XM_PI - rotationToAdd) : worldOffsetRadians - rotationToAdd; } //RY-
             }
         }
 
