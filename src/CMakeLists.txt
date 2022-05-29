@@ -1,11 +1,8 @@
 cmake_minimum_required(VERSION "3.7.1")
 
 # Solution
-project("Simple_SteamVR_Driver_Tutorial")
+project("OculusToSteamVR")
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
-
-# Deps
-set(OPENVR_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/libraries/openvr/headers")
 
 set(SIZEOF_VOIDP ${CMAKE_SIZEOF_VOID_P})
 if(CMAKE_SIZEOF_VOID_P EQUAL 8)
@@ -23,36 +20,40 @@ elseif(APPLE)
 endif()
 
 find_library(OPENVR_LIB openvr_api HINTS "${CMAKE_CURRENT_SOURCE_DIR}/libraries/openvr/lib/${PLATFORM_NAME}${PROCESSOR_ARCH}/" NO_DEFAULT_PATH )
+find_library(LIBOVR_LIB LibOVR HINTS "${CMAKE_CURRENT_SOURCE_DIR}/libraries/LibOVR/Lib/Windows/x64/Release/VS2017/" NO_DEFAULT_PATH ) #Windows only
 
-# Example Driver
-set(DRIVER_NAME "example")
-set(EXAMPLE_PROJECT "driver_${DRIVER_NAME}")
+set(DRIVER_NAME "oculus_to_steamvr")
+set(PROJECT_NAME "driver_${DRIVER_NAME}")
 file(GLOB_RECURSE HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/driver_files/src/*.hpp")
 file(GLOB_RECURSE SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/driver_files/src/*.cpp")
-add_library("${EXAMPLE_PROJECT}" SHARED "${HEADERS}" "${SOURCES}")
+add_library("${PROJECT_NAME}" SHARED "${HEADERS}" "${SOURCES}")
 
-target_include_directories("${EXAMPLE_PROJECT}" PUBLIC "${OPENVR_INCLUDE_DIR}")
-target_include_directories("${EXAMPLE_PROJECT}" PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/libraries/linalg")
-target_include_directories("${EXAMPLE_PROJECT}" PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/driver_files/src/")
-target_link_libraries("${EXAMPLE_PROJECT}" PUBLIC "${OPENVR_LIB}")
+target_include_directories("${PROJECT_NAME}" PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/libraries/openvr/headers")
+target_include_directories("${PROJECT_NAME}" PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/libraries/linalg")
+target_include_directories("${PROJECT_NAME}" PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/libraries/LibOVR/Include")
+target_include_directories("${PROJECT_NAME}" PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/libraries/LibOVR/Include/Extras")
+target_include_directories("${PROJECT_NAME}" PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/libraries/DirectX")
+target_include_directories("${PROJECT_NAME}" PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/driver_files/src/")
+target_link_libraries("${PROJECT_NAME}" PUBLIC "${OPENVR_LIB}")
+target_link_libraries("${PROJECT_NAME}" PUBLIC "${LIBOVR_LIB}")
 source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}/driver_files/src" PREFIX "Header Files" FILES ${HEADERS})
 source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}/driver_files/src" PREFIX "Source Files" FILES ${SOURCES})
-set_property(TARGET "${EXAMPLE_PROJECT}" PROPERTY CXX_STANDARD 17)
+set_property(TARGET "${PROJECT_NAME}" PROPERTY CXX_STANDARD 17)
 
 # Copy driver assets to output folder
 add_custom_command(
-    TARGET ${EXAMPLE_PROJECT}
-    PRE_BUILD 
-    COMMAND ${CMAKE_COMMAND} -E copy_directory 
-    ${CMAKE_SOURCE_DIR}/driver_files/driver/ 
-    $<TARGET_FILE_DIR:${EXAMPLE_PROJECT}>
+    TARGET ${PROJECT_NAME}
+    PRE_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+    ${CMAKE_SOURCE_DIR}/driver_files/driver/
+    $<TARGET_FILE_DIR:${PROJECT_NAME}>
 )
 
 # Copy dll to output folder
 add_custom_command(
-    TARGET ${EXAMPLE_PROJECT} 
+    TARGET ${PROJECT_NAME}
     POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy 
-    $<TARGET_FILE:${EXAMPLE_PROJECT}>
-    $<TARGET_FILE_DIR:${EXAMPLE_PROJECT}>/${DRIVER_NAME}/bin/${PLATFORM_NAME}${PROCESSOR_ARCH}/$<TARGET_FILE_NAME:${EXAMPLE_PROJECT}>
+    COMMAND ${CMAKE_COMMAND} -E copy
+    $<TARGET_FILE:${PROJECT_NAME}>
+    $<TARGET_FILE_DIR:${PROJECT_NAME}>/${DRIVER_NAME}/bin/${PLATFORM_NAME}${PROCESSOR_ARCH}/$<TARGET_FILE_NAME:${PROJECT_NAME}>
 )
