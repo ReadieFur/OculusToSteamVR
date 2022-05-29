@@ -8,10 +8,10 @@
   "should_show_binding_errors": true,
   "input_bindingui_left": {
     "transform": "scale(-1,1)",
-    "image": "{example}/icons/example_tracker.svg"
+    "image": "{oculus_to_steamvr}/icons/example_tracker.svg"
   },
   "input_bindingui_right": {
-    "image": "{example}/icons/example_tracker.svg"
+    "image": "{oculus_to_steamvr}/icons/example_tracker.svg"
   },
   "input_source": {
     "/pose/raw" : {

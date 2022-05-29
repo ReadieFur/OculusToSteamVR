@@ -8,7 +8,7 @@
 #include <Driver/IVRDevice.hpp>
 #include <Native/DriverFactory.hpp>
 
-namespace ExampleDriver {
+namespace OculusToSteamVR {
     class HMDDevice : public IVRDevice, public vr::IVRDisplayComponent {
         public:
             HMDDevice(std::string serial);

@@ -4,14 +4,14 @@
 #include <Driver/ControllerDevice.hpp>
 #include <Driver/TrackingReferenceDevice.hpp>
 
-vr::EVRInitError ExampleDriver::VRDriver::Init(vr::IVRDriverContext* pDriverContext)
+vr::EVRInitError OculusToSteamVR::VRDriver::Init(vr::IVRDriverContext* pDriverContext)
 {
     // Perform driver context initialisation
     if (vr::EVRInitError init_error = vr::InitServerDriverContext(pDriverContext); init_error != vr::EVRInitError::VRInitError_None) {
         return init_error;
     }
 
-    Log("Activating ExampleDriver...");
+    Log("Activating OculusToSteamVR...");
 
     // Add a HMD
     this->AddDevice(std::make_shared<HMDDevice>("Example_HMDDevice"));
@@ -27,16 +27,16 @@ vr::EVRInitError ExampleDriver::VRDriver::Init(vr::IVRDriverContext* pDriverCont
     this->AddDevice(std::make_shared<TrackingReferenceDevice>("Example_TrackingReference_A"));
     this->AddDevice(std::make_shared<TrackingReferenceDevice>("Example_TrackingReference_B"));
 
-    Log("ExampleDriver Loaded Successfully");
+    Log("OculusToSteamVR Loaded Successfully");
 
 	return vr::VRInitError_None;
 }
 
-void ExampleDriver::VRDriver::Cleanup()
+void OculusToSteamVR::VRDriver::Cleanup()
 {
 }
 
-void ExampleDriver::VRDriver::RunFrame()
+void OculusToSteamVR::VRDriver::RunFrame()
 {
     // Collect events
     vr::VREvent_t event;
@@ -57,35 +57,35 @@ void ExampleDriver::VRDriver::RunFrame()
         device->Update();
 }
 
-bool ExampleDriver::VRDriver::ShouldBlockStandbyMode()
+bool OculusToSteamVR::VRDriver::ShouldBlockStandbyMode()
 {
     return false;
 }
 
-void ExampleDriver::VRDriver::EnterStandby()
+void OculusToSteamVR::VRDriver::EnterStandby()
 {
 }
 
-void ExampleDriver::VRDriver::LeaveStandby()
+void OculusToSteamVR::VRDriver::LeaveStandby()
 {
 }
 
-std::vector<std::shared_ptr<ExampleDriver::IVRDevice>> ExampleDriver::VRDriver::GetDevices()
+std::vector<std::shared_ptr<OculusToSteamVR::IVRDevice>> OculusToSteamVR::VRDriver::GetDevices()
 {
     return this->devices_;
 }
 
-std::vector<vr::VREvent_t> ExampleDriver::VRDriver::GetOpenVREvents()
+std::vector<vr::VREvent_t> OculusToSteamVR::VRDriver::GetOpenVREvents()
 {
     return this->openvr_events_;
 }
 
-std::chrono::milliseconds ExampleDriver::VRDriver::GetLastFrameTime()
+std::chrono::milliseconds OculusToSteamVR::VRDriver::GetLastFrameTime()
 {
     return this->frame_timing_;
 }
 
-bool ExampleDriver::VRDriver::AddDevice(std::shared_ptr<IVRDevice> device)
+bool OculusToSteamVR::VRDriver::AddDevice(std::shared_ptr<IVRDevice> device)
 {
     vr::ETrackedDeviceClass openvr_device_class;
     // Remember to update this switch when new device types are added
@@ -111,7 +111,7 @@ bool ExampleDriver::VRDriver::AddDevice(std::shared_ptr<IVRDevice> device)
     return result;
 }
 
-ExampleDriver::SettingsValue ExampleDriver::VRDriver::GetSettingsValue(std::string key)
+OculusToSteamVR::SettingsValue OculusToSteamVR::VRDriver::GetSettingsValue(std::string key)
 {
     vr::EVRSettingsError err = vr::EVRSettingsError::VRSettingsError_None;
     int int_value = vr::VRSettings()->GetInt32(settings_key_.c_str(), key.c_str(), &err);
@@ -139,23 +139,23 @@ ExampleDriver::SettingsValue ExampleDriver::VRDriver::GetSettingsValue(std::stri
     return SettingsValue();
 }
 
-void ExampleDriver::VRDriver::Log(std::string message)
+void OculusToSteamVR::VRDriver::Log(std::string message)
 {
     std::string message_endl = message + "\n";
     vr::VRDriverLog()->Log(message_endl.c_str());
 }
 
-vr::IVRDriverInput* ExampleDriver::VRDriver::GetInput()
+vr::IVRDriverInput* OculusToSteamVR::VRDriver::GetInput()
 {
     return vr::VRDriverInput();
 }
 
-vr::CVRPropertyHelpers* ExampleDriver::VRDriver::GetProperties()
+vr::CVRPropertyHelpers* OculusToSteamVR::VRDriver::GetProperties()
 {
     return vr::VRProperties();
 }
 
-vr::IVRServerDriverHost* ExampleDriver::VRDriver::GetDriverHost()
+vr::IVRServerDriverHost* OculusToSteamVR::VRDriver::GetDriverHost()
 {
     return vr::VRServerDriverHost();
 }
