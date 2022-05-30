@@ -132,10 +132,10 @@ vr::EVRInitError OculusToSteamVR::ControllerDevice::Activate(uint32_t unObjectId
 
     GetDriver()->Log("Activating controller " + this->serial_);
 
-    // Get the properties handle
+    //Get the properties handle.
     auto props = GetDriver()->GetProperties()->TrackedDeviceToPropertyContainer(this->device_index_);
 
-    // Setup inputs and outputs
+    //Setup inputs and outputs.
     GetDriver()->GetInput()->CreateHapticComponent(props, "/output/haptic", &this->haptic_component_);
 
     GetDriver()->GetInput()->CreateBooleanComponent(props, "/input/a/click", &this->a_button_click_component_);
@@ -180,11 +180,12 @@ vr::EVRInitError OculusToSteamVR::ControllerDevice::Activate(uint32_t unObjectId
         GetDriver()->GetProperties()->SetStringProperty(props, vr::Prop_RenderModelName_String, "oculus_cv1_controller_right");
         GetDriver()->GetProperties()->SetInt32Property(props, vr::Prop_ControllerRoleHint_Int32, vr::ETrackedControllerRole::TrackedControllerRole_RightHand);
     }
+    GetDriver()->GetProperties()->SetStringProperty(props, vr::Prop_RenderModelName_String, "{htc}/rendermodels/vr_tracker_vive_1_0");
 
     //Set controller profile.
     GetDriver()->GetProperties()->SetStringProperty(props, vr::Prop_InputProfilePath_String, "{oculus}/input/touch_profile.json");
 
-    //Icons
+    //Icons.
     std::string handString = this->handedness_ == Handedness::LEFT ? "left" : "right";
     GetDriver()->GetProperties()->SetStringProperty(props, vr::Prop_NamedIconPathDeviceReady_String, ("{oculus}/icons/cv1_" + handString + "_controller_ready.png").c_str());
     GetDriver()->GetProperties()->SetStringProperty(props, vr::Prop_NamedIconPathDeviceOff_String, ("{oculus}/icons/cv1_" + handString + "_controller_off.png").c_str());
@@ -194,6 +195,8 @@ vr::EVRInitError OculusToSteamVR::ControllerDevice::Activate(uint32_t unObjectId
     GetDriver()->GetProperties()->SetStringProperty(props, vr::Prop_NamedIconPathDeviceNotReady_String, ("{oculus}/icons/cv1_" + handString + "_controller_error.png").c_str());
     GetDriver()->GetProperties()->SetStringProperty(props, vr::Prop_NamedIconPathDeviceStandby_String, ("{oculus}/icons/cv1_" + handString + "_controller_off.png").c_str());
     GetDriver()->GetProperties()->SetStringProperty(props, vr::Prop_NamedIconPathDeviceAlertLow_String, ("{oculus}/icons/cv1_" + handString + "_controller_ready_low.png").c_str());
+
+    vr::VRProperties()->SetStringProperty(props, vr::Prop_TrackingSystemName_String, "lighthouse");
 
     return vr::EVRInitError::VRInitError_None;
 }
