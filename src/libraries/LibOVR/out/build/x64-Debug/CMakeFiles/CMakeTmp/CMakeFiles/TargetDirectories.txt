@@ -1,0 +1,3 @@
+O:/GitHub/ReadieFur/OculusToSteamVR/src/libraries/LibOVR/out/build/x64-Debug/CMakeFiles/CMakeTmp/CMakeFiles/edit_cache.dir
+O:/GitHub/ReadieFur/OculusToSteamVR/src/libraries/LibOVR/out/build/x64-Debug/CMakeFiles/CMakeTmp/CMakeFiles/cmTC_74e7b.dir
+O:/GitHub/ReadieFur/OculusToSteamVR/src/libraries/LibOVR/out/build/x64-Debug/CMakeFiles/CMakeTmp/CMakeFiles/rebuild_cache.dir

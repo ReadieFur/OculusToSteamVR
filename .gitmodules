@@ -1,6 +1,6 @@
-[submodule "src/SteamVRDriver/libraries/linalg"]
-	path = src/SteamVRDriver/libraries/linalg
+[submodule "src/libraries/linalg"]
+	path = src/libraries/linalg
 	url = https://github.com/sgorsten/linalg.git
-[submodule "src/SteamVRDriver/libraries/openvr"]
-	path = src/SteamVRDriver/libraries/openvr
+[submodule "src/libraries/openvr"]
+	path = src/libraries/openvr
 	url = https://github.com/ValveSoftware/openvr.git
