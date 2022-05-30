@@ -1,31 +1,59 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
-VisualStudioVersion = 17.0.32112.339
-MinimumVisualStudioVersion = 10.0.40219.1
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "OculusToSteamVRDriver", "OculusToSteamVRDriver.vcxproj", "{BB9022BC-6D56-407E-8E5F-7C5737467F3C}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "CMakePredefinedTargets", "CMakePredefinedTargets", "{C51E47AC-BA32-3DC9-955C-4F500DEF852C}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ALL_BUILD", "ALL_BUILD.vcxproj", "{98750F32-2B7D-34B4-A9EA-E4B74C94410E}"
+	ProjectSection(ProjectDependencies) = postProject
+		{1B44ECFE-40C7-3AFA-941C-70427F737156} = {1B44ECFE-40C7-3AFA-941C-70427F737156}
+		{38A33D03-096C-3707-8478-DB5F85711544} = {38A33D03-096C-3707-8478-DB5F85711544}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ZERO_CHECK", "ZERO_CHECK.vcxproj", "{1B44ECFE-40C7-3AFA-941C-70427F737156}"
+	ProjectSection(ProjectDependencies) = postProject
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "driver_oculus_to_steamvr", "driver_oculus_to_steamvr.vcxproj", "{38A33D03-096C-3707-8478-DB5F85711544}"
+	ProjectSection(ProjectDependencies) = postProject
+		{1B44ECFE-40C7-3AFA-941C-70427F737156} = {1B44ECFE-40C7-3AFA-941C-70427F737156}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
-		Debug|x86 = Debug|x86
 		Release|x64 = Release|x64
-		Release|x86 = Release|x86
+		MinSizeRel|x64 = MinSizeRel|x64
+		RelWithDebInfo|x64 = RelWithDebInfo|x64
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{BB9022BC-6D56-407E-8E5F-7C5737467F3C}.Debug|x64.ActiveCfg = Debug|x64
-		{BB9022BC-6D56-407E-8E5F-7C5737467F3C}.Debug|x64.Build.0 = Debug|x64
-		{BB9022BC-6D56-407E-8E5F-7C5737467F3C}.Debug|x86.ActiveCfg = Debug|Win32
-		{BB9022BC-6D56-407E-8E5F-7C5737467F3C}.Debug|x86.Build.0 = Debug|Win32
-		{BB9022BC-6D56-407E-8E5F-7C5737467F3C}.Release|x64.ActiveCfg = Release|x64
-		{BB9022BC-6D56-407E-8E5F-7C5737467F3C}.Release|x64.Build.0 = Release|x64
-		{BB9022BC-6D56-407E-8E5F-7C5737467F3C}.Release|x86.ActiveCfg = Release|Win32
-		{BB9022BC-6D56-407E-8E5F-7C5737467F3C}.Release|x86.Build.0 = Release|Win32
+		{98750F32-2B7D-34B4-A9EA-E4B74C94410E}.Debug|x64.ActiveCfg = Debug|x64
+		{98750F32-2B7D-34B4-A9EA-E4B74C94410E}.Release|x64.ActiveCfg = Release|x64
+		{98750F32-2B7D-34B4-A9EA-E4B74C94410E}.MinSizeRel|x64.ActiveCfg = MinSizeRel|x64
+		{98750F32-2B7D-34B4-A9EA-E4B74C94410E}.RelWithDebInfo|x64.ActiveCfg = RelWithDebInfo|x64
+		{1B44ECFE-40C7-3AFA-941C-70427F737156}.Debug|x64.ActiveCfg = Debug|x64
+		{1B44ECFE-40C7-3AFA-941C-70427F737156}.Debug|x64.Build.0 = Debug|x64
+		{1B44ECFE-40C7-3AFA-941C-70427F737156}.Release|x64.ActiveCfg = Release|x64
+		{1B44ECFE-40C7-3AFA-941C-70427F737156}.Release|x64.Build.0 = Release|x64
+		{1B44ECFE-40C7-3AFA-941C-70427F737156}.MinSizeRel|x64.ActiveCfg = MinSizeRel|x64
+		{1B44ECFE-40C7-3AFA-941C-70427F737156}.MinSizeRel|x64.Build.0 = MinSizeRel|x64
+		{1B44ECFE-40C7-3AFA-941C-70427F737156}.RelWithDebInfo|x64.ActiveCfg = RelWithDebInfo|x64
+		{1B44ECFE-40C7-3AFA-941C-70427F737156}.RelWithDebInfo|x64.Build.0 = RelWithDebInfo|x64
+		{38A33D03-096C-3707-8478-DB5F85711544}.Debug|x64.ActiveCfg = Debug|x64
+		{38A33D03-096C-3707-8478-DB5F85711544}.Debug|x64.Build.0 = Debug|x64
+		{38A33D03-096C-3707-8478-DB5F85711544}.Release|x64.ActiveCfg = Release|x64
+		{38A33D03-096C-3707-8478-DB5F85711544}.Release|x64.Build.0 = Release|x64
+		{38A33D03-096C-3707-8478-DB5F85711544}.MinSizeRel|x64.ActiveCfg = MinSizeRel|x64
+		{38A33D03-096C-3707-8478-DB5F85711544}.MinSizeRel|x64.Build.0 = MinSizeRel|x64
+		{38A33D03-096C-3707-8478-DB5F85711544}.RelWithDebInfo|x64.ActiveCfg = RelWithDebInfo|x64
+		{38A33D03-096C-3707-8478-DB5F85711544}.RelWithDebInfo|x64.Build.0 = RelWithDebInfo|x64
 	EndGlobalSection
-	GlobalSection(SolutionProperties) = preSolution
-		HideSolutionNode = FALSE
+	GlobalSection(NestedProjects) = preSolution
+		{98750F32-2B7D-34B4-A9EA-E4B74C94410E} = {C51E47AC-BA32-3DC9-955C-4F500DEF852C}
+		{1B44ECFE-40C7-3AFA-941C-70427F737156} = {C51E47AC-BA32-3DC9-955C-4F500DEF852C}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
-		SolutionGuid = {5CD11A49-516C-4D8A-ACE6-828F5D71B4D9}
+		SolutionGuid = {7D933870-3244-3895-87BD-59E2ECA4B7BC}
+	EndGlobalSection
+	GlobalSection(ExtensibilityAddIns) = postSolution
 	EndGlobalSection
 EndGlobal

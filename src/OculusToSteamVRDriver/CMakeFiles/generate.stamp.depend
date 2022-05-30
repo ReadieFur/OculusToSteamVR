@@ -1,0 +1,23 @@
+# CMake generation dependency list for this directory.
+A:/Program Files/CMake/share/cmake-3.23/Modules/CMakeCInformation.cmake
+A:/Program Files/CMake/share/cmake-3.23/Modules/CMakeCXXInformation.cmake
+A:/Program Files/CMake/share/cmake-3.23/Modules/CMakeCommonLanguageInclude.cmake
+A:/Program Files/CMake/share/cmake-3.23/Modules/CMakeGenericSystem.cmake
+A:/Program Files/CMake/share/cmake-3.23/Modules/CMakeInitializeConfigs.cmake
+A:/Program Files/CMake/share/cmake-3.23/Modules/CMakeLanguageInformation.cmake
+A:/Program Files/CMake/share/cmake-3.23/Modules/CMakeRCInformation.cmake
+A:/Program Files/CMake/share/cmake-3.23/Modules/CMakeSystemSpecificInformation.cmake
+A:/Program Files/CMake/share/cmake-3.23/Modules/CMakeSystemSpecificInitialize.cmake
+A:/Program Files/CMake/share/cmake-3.23/Modules/Compiler/CMakeCommonCompilerMacros.cmake
+A:/Program Files/CMake/share/cmake-3.23/Modules/Compiler/MSVC-C.cmake
+A:/Program Files/CMake/share/cmake-3.23/Modules/Compiler/MSVC-CXX.cmake
+A:/Program Files/CMake/share/cmake-3.23/Modules/Platform/Windows-MSVC-C.cmake
+A:/Program Files/CMake/share/cmake-3.23/Modules/Platform/Windows-MSVC-CXX.cmake
+A:/Program Files/CMake/share/cmake-3.23/Modules/Platform/Windows-MSVC.cmake
+A:/Program Files/CMake/share/cmake-3.23/Modules/Platform/Windows.cmake
+A:/Program Files/CMake/share/cmake-3.23/Modules/Platform/WindowsPaths.cmake
+O:/GitHub/ReadieFur/OculusToSteamVR/src/OculusToSteamVRDriver/CMakeFiles/3.23.0-rc2/CMakeCCompiler.cmake
+O:/GitHub/ReadieFur/OculusToSteamVR/src/OculusToSteamVRDriver/CMakeFiles/3.23.0-rc2/CMakeCXXCompiler.cmake
+O:/GitHub/ReadieFur/OculusToSteamVR/src/OculusToSteamVRDriver/CMakeFiles/3.23.0-rc2/CMakeRCCompiler.cmake
+O:/GitHub/ReadieFur/OculusToSteamVR/src/OculusToSteamVRDriver/CMakeFiles/3.23.0-rc2/CMakeSystem.cmake
+O:/GitHub/ReadieFur/OculusToSteamVR/src/OculusToSteamVRDriver/CMakeLists.txt
