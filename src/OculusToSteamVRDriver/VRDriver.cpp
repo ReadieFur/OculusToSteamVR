@@ -1,5 +1,4 @@
 #include "VRDriver.hpp"
-#include <HMDDevice.hpp>
 #include <TrackerDevice.hpp>
 #include <ControllerDevice.hpp>
 #include <TrackingReferenceDevice.hpp>

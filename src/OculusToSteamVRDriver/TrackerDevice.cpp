@@ -41,41 +41,63 @@ void OculusToSteamVR::TrackerDevice::Update(SharedData* sharedBuffer)
         }
     }
 
-    // Setup pose for this frame
-    auto newPose = IVRDevice::MakeDefaultPose();
+    //Setup pose for this frame.
+    //auto newPose = IVRDevice::MakeDefaultPose();
+    auto newPose = this->last_pose_;
+    newPose.poseIsValid = true;
+    newPose.result = vr::ETrackingResult::TrackingResult_Running_OK;
 
-    bool validObject = true;
     ovrPosef pose;
-    switch (oculus_device_type_)
+    unsigned int flags;
+    if (oculus_device_type_ == HMD)
     {
-    case HMD:
         pose = sharedBuffer->oTrackingState.HeadPose.ThePose;
-        break;
-    case Controller_Left:
-        pose = sharedBuffer->oTrackingState.HandPoses[ovrHandType::ovrHand_Left].ThePose;
-        break;
-    case Controller_Right:
-        pose = sharedBuffer->oTrackingState.HandPoses[ovrHandType::ovrHand_Right].ThePose;
-        break;
-    default:
-        validObject = false;
-        break;
+        flags = sharedBuffer->oTrackingState.StatusFlags;
     }
-    if (!validObject && oculus_device_type_ == Object)
+    else if (oculus_device_type_ == Controller_Left)
+    {
+        pose = sharedBuffer->oTrackingState.HandPoses[ovrHandType::ovrHand_Left].ThePose;
+        flags = sharedBuffer->oTrackingState.HandStatusFlags[ovrHandType::ovrHand_Left];
+    }
+    else if (oculus_device_type_ == Controller_Right)
+    {
+        pose = sharedBuffer->oTrackingState.HandPoses[ovrHandType::ovrHand_Right].ThePose;
+        flags = sharedBuffer->oTrackingState.HandStatusFlags[ovrHandType::ovrHand_Right];
+    }
+    else if (oculus_device_type_ == Object)
     {
         int index = atoi(this->serial_.substr(13).c_str()); //13 -> "oculus_object"
         if (sharedBuffer->vrObjectsPose.find(index) == sharedBuffer->vrObjectsPose.end()) return;
         pose = sharedBuffer->vrObjectsPose[index].ThePose;
+        flags = ovrStatusBits_::ovrStatus_PositionValid | ovrStatusBits_::ovrStatus_OrientationValid;
     }
-    else if (!validObject) return;
+    else return;
 
-    newPose.vecPosition[0] = pose.Position.x;
-    newPose.vecPosition[1] = pose.Position.y;
-    newPose.vecPosition[2] = pose.Position.z;
-    newPose.qRotation.w = pose.Orientation.w;
-    newPose.qRotation.x = pose.Orientation.x;
-    newPose.qRotation.y = pose.Orientation.y;
-    newPose.qRotation.z = pose.Orientation.z;
+    //Position.
+    if (flags & ovrStatus_PositionTracked)
+    {
+        newPose.vecPosition[0] = pose.Position.x;
+        newPose.vecPosition[1] = pose.Position.y;
+        newPose.vecPosition[2] = pose.Position.z;
+    }
+    else
+    {
+        newPose.poseIsValid = false;
+        newPose.result = vr::ETrackingResult::TrackingResult_Fallback_RotationOnly;
+    }
+    //Rotation.
+    if (flags & ovrStatus_OrientationTracked)
+    {
+        newPose.qRotation.w = pose.Orientation.w;
+        newPose.qRotation.x = pose.Orientation.x;
+        newPose.qRotation.y = pose.Orientation.y;
+        newPose.qRotation.z = pose.Orientation.z;
+    }
+    else
+    {
+        newPose.poseIsValid = false;
+        if (flags & ovrStatus_PositionTracked) newPose.result = vr::ETrackingResult::TrackingResult_Running_OutOfRange;
+    }
 
     // Post pose
     GetDriver()->GetDriverHost()->TrackedDevicePoseUpdated(this->device_index_, newPose, sizeof(vr::DriverPose_t));

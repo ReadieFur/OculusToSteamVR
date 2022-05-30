@@ -424,7 +424,6 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
     <ClInclude Include="O:\GitHub\ReadieFur\OculusToSteamVR\src\OculusToSteamVRDriver\ControllerDevice.hpp" />
     <ClInclude Include="O:\GitHub\ReadieFur\OculusToSteamVR\src\OculusToSteamVRDriver\DeviceType.hpp" />
     <ClInclude Include="O:\GitHub\ReadieFur\OculusToSteamVR\src\OculusToSteamVRDriver\DriverFactory.hpp" />
-    <ClInclude Include="O:\GitHub\ReadieFur\OculusToSteamVR\src\OculusToSteamVRDriver\HMDDevice.hpp" />
     <ClInclude Include="O:\GitHub\ReadieFur\OculusToSteamVR\src\OculusToSteamVRDriver\IVRDevice.hpp" />
     <ClInclude Include="O:\GitHub\ReadieFur\OculusToSteamVR\src\OculusToSteamVRDriver\IVRDriver.hpp" />
     <ClInclude Include="O:\GitHub\ReadieFur\OculusToSteamVR\src\OculusToSteamVRDriver\TrackerDevice.hpp" />
@@ -433,7 +432,6 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
     <ClCompile Include="O:\GitHub\ReadieFur\OculusToSteamVR\src\OculusToSteamVRDriver\CMakeFiles\3.23.0-rc2\CompilerIdCXX\CMakeCXXCompilerId.cpp" />
     <ClCompile Include="O:\GitHub\ReadieFur\OculusToSteamVR\src\OculusToSteamVRDriver\ControllerDevice.cpp" />
     <ClCompile Include="O:\GitHub\ReadieFur\OculusToSteamVR\src\OculusToSteamVRDriver\DriverFactory.cpp" />
-    <ClCompile Include="O:\GitHub\ReadieFur\OculusToSteamVR\src\OculusToSteamVRDriver\HMDDevice.cpp" />
     <ClCompile Include="O:\GitHub\ReadieFur\OculusToSteamVR\src\OculusToSteamVRDriver\TrackerDevice.cpp" />
     <ClCompile Include="O:\GitHub\ReadieFur\OculusToSteamVR\src\OculusToSteamVRDriver\TrackingReferenceDevice.cpp" />
     <ClCompile Include="O:\GitHub\ReadieFur\OculusToSteamVR\src\OculusToSteamVRDriver\VRDriver.cpp" />
