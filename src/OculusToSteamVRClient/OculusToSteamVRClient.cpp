@@ -79,7 +79,7 @@ void VRLoop(ovrSession oSession/*, HANDLE sharedMutex*/, SharedData* sharedBuffe
 	}
 
 	//Objects.
-	unsigned int vrObjectsCount = (ovr_GetConnectedControllerTypes(oSession) >> 8) & 0xf;
+	unsigned int vrObjectsCount = (ovr_GetConnectedControllerTypes(oSession) >> 8) & 0xf; //ovr_GetTrackerCount?
 	sharedBuffer->vrObjectsCount = vrObjectsCount;
 	for (int i = 0; i < vrObjectsCount; i++)
 	{

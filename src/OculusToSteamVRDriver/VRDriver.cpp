@@ -6,6 +6,7 @@
 #include <Windows.h>
 #include <mutex>
 #include <thread>
+#include <OVR_CAPI.h>
 
 vr::EVRInitError OculusToSteamVR::VRDriver::InitSharedData()
 {
@@ -52,7 +53,19 @@ vr::EVRInitError OculusToSteamVR::VRDriver::Init(vr::IVRDriverContext* pDriverCo
 
     Log("Activating OculusToSteamVR...");
 
+    //Setup the shared objects.
     InitSharedData();
+
+    vr::EVRSettingsError settingsError;
+    //Add the hmd as a tracked device (if specified in the config).
+    if (vr::VRSettings()->GetBool(settings_key_.c_str(), "track_hmd", &settingsError)) this->AddDevice(std::make_shared<TrackerDevice>("oculus_hmd"));
+    if (settingsError == vr::VRSettingsError_UnsetSettingHasNoDefault) vr::VRSettings()->SetBool(settings_key_.c_str(), "track_hmd", false);
+
+    //Add the controllers as trackers (if specified).
+    if (vr::VRSettings()->GetBool(settings_key_.c_str(), "controllers_as_trackers", &settingsError))
+        for (int i = 0; i < 2; i++) this->AddDevice(std::make_shared<TrackerDevice>("oculus_controller" + std::to_string(i)));
+    else for (int i = 0; i < 2; i++) this->AddDevice(std::make_shared<ControllerDevice>("oculus_controller" + std::to_string(i)));
+    if (settingsError == vr::VRSettingsError_UnsetSettingHasNoDefault) vr::VRSettings()->SetBool(settings_key_.c_str(), "controllers_as_trackers", true);
 
     Log("OculusToSteamVR Loaded Successfully");
 
@@ -77,7 +90,26 @@ void OculusToSteamVR::VRDriver::RunFrame()
     this->last_frame_time_ = now;
 
     //Update devices.
-    for (auto& device : this->devices_) device->Update();
+    for (auto& device : this->devices_)
+    {
+        std::string deviceSerial = device->GetSerial();
+        ovrPosef pose;
+
+        if (deviceSerial == "oculus_hmd")
+        {
+            //HMD Update.
+            pose = sharedBuffer->oTrackingState.HeadPose.ThePose;
+        }
+        else if (deviceSerial.rfind("oculus_controller", 0) == 0)
+        {
+            //Controller update.
+            //TODO: Modify the interface to store the device type index and inherit similar code to reduce duplication.
+            pose = sharedBuffer->oTrackingState.HandPoses[atoi(deviceSerial.substr(17).c_str()) == 0 ? 0 : 1].ThePose;
+        }
+
+        device->Update(pose);
+        //TODO: Objects.
+    }
 }
 
 bool OculusToSteamVR::VRDriver::ShouldBlockStandbyMode()

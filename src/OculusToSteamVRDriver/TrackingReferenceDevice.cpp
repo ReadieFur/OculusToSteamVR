@@ -14,13 +14,13 @@ std::string OculusToSteamVR::TrackingReferenceDevice::GetSerial()
     return this->serial_;
 }
 
-void OculusToSteamVR::TrackingReferenceDevice::Update()
+void OculusToSteamVR::TrackingReferenceDevice::Update(ovrPosef pose)
 {
     if (this->device_index_ == vr::k_unTrackedDeviceIndexInvalid)
         return;
 
     // Setup pose for this frame
-    auto pose = IVRDevice::MakeDefaultPose();
+    auto newPose = IVRDevice::MakeDefaultPose();
 
     linalg::vec<float, 3> device_position{ 0.f, 1.f, 1.f };
 
@@ -32,18 +32,18 @@ void OculusToSteamVR::TrackingReferenceDevice::Update()
 
     device_position = linalg::qrot(y_quat, device_position);
 
-    pose.vecPosition[0] = device_position.x;
-    pose.vecPosition[1] = device_position.y;
-    pose.vecPosition[2] = device_position.z;
+    newPose.vecPosition[0] = device_position.x;
+    newPose.vecPosition[1] = device_position.y;
+    newPose.vecPosition[2] = device_position.z;
 
-    pose.qRotation.w = device_rotation.w;
-    pose.qRotation.x = device_rotation.x;
-    pose.qRotation.y = device_rotation.y;
-    pose.qRotation.z = device_rotation.z;
+    newPose.qRotation.w = device_rotation.w;
+    newPose.qRotation.x = device_rotation.x;
+    newPose.qRotation.y = device_rotation.y;
+    newPose.qRotation.z = device_rotation.z;
 
     // Post pose
-    GetDriver()->GetDriverHost()->TrackedDevicePoseUpdated(this->device_index_, pose, sizeof(vr::DriverPose_t));
-    this->last_pose_ = pose;
+    GetDriver()->GetDriverHost()->TrackedDevicePoseUpdated(this->device_index_, newPose, sizeof(vr::DriverPose_t));
+    this->last_pose_ = newPose;
 }
 
 DeviceType OculusToSteamVR::TrackingReferenceDevice::GetDeviceType()

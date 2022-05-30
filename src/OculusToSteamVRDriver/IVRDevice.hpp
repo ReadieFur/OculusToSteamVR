@@ -3,6 +3,7 @@
 #include <variant>
 #include <openvr_driver.h>
 #include <DeviceType.hpp>
+#include <OVR_CAPI.h>
 
 namespace OculusToSteamVR
 {
@@ -19,7 +20,7 @@ namespace OculusToSteamVR
         /// Runs any update logic for this device.
         /// Called once per frame
         /// </summary>
-        virtual void Update() = 0;
+        virtual void Update(ovrPosef pose) = 0;
 
         /// <summary>
         /// Returns the OpenVR device index
