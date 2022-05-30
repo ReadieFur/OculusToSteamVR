@@ -3,6 +3,47 @@
 #include <TrackerDevice.hpp>
 #include <ControllerDevice.hpp>
 #include <TrackingReferenceDevice.hpp>
+#include <Windows.h>
+#include <mutex>
+#include <thread>
+
+vr::EVRInitError OculusToSteamVR::VRDriver::InitSharedData()
+{
+    HANDLE hMapFile = CreateFileMappingW(
+        INVALID_HANDLE_VALUE, //Use paging file.
+        NULL, //Default security.
+        PAGE_READWRITE, //Read/write access.
+        0, //Maximum object size (high-order DWORD).
+        sizeof(SharedData), //Maximum object size (low-order DWORD).
+        L"Local\\ovr_client_shared_data" //Name of mapping object.
+    );
+    if (hMapFile == NULL)
+    {
+        Log("Could not open file mapping object " + GetLastError());
+        return vr::VRInitError_IPC_SharedStateInitFailed;
+    }
+
+    sharedBuffer = new(MapViewOfFile(
+        hMapFile, //Handle to map object.
+        FILE_MAP_ALL_ACCESS,  //Read/write permission.
+        0,
+        0,
+        sizeof(SharedData)))SharedData();
+    if (sharedBuffer == NULL)
+    {
+        Log("Could not map view of file " + GetLastError());
+        CloseHandle(hMapFile);
+        return vr::VRInitError_IPC_SharedStateInitFailed;
+    }
+
+    HANDLE sharedMutex = CreateMutexW(0, true, L"Local\\ovr_client_shared_mutex");
+    WaitForSingleObject(
+        sharedMutex,    // handle to mutex
+        INFINITE);  // no time-out interval
+    ReleaseMutex(sharedMutex);
+
+    return vr::VRInitError_None;
+}
 
 vr::EVRInitError OculusToSteamVR::VRDriver::Init(vr::IVRDriverContext* pDriverContext)
 {
@@ -11,19 +52,7 @@ vr::EVRInitError OculusToSteamVR::VRDriver::Init(vr::IVRDriverContext* pDriverCo
 
     Log("Activating OculusToSteamVR...");
 
-    // Add a HMD
-    this->AddDevice(std::make_shared<HMDDevice>("Example_HMDDevice"));
-
-    // Add a couple controllers
-    this->AddDevice(std::make_shared<ControllerDevice>("Example_ControllerDevice_Left", ControllerDevice::Handedness::LEFT));
-    this->AddDevice(std::make_shared<ControllerDevice>("Example_ControllerDevice_Right", ControllerDevice::Handedness::RIGHT));
-
-    // Add a tracker
-    this->AddDevice(std::make_shared<TrackerDevice>("Example_TrackerDevice"));
-
-    // Add a couple tracking references
-    this->AddDevice(std::make_shared<TrackingReferenceDevice>("Example_TrackingReference_A"));
-    this->AddDevice(std::make_shared<TrackingReferenceDevice>("Example_TrackingReference_B"));
+    InitSharedData();
 
     Log("OculusToSteamVR Loaded Successfully");
 
@@ -36,18 +65,18 @@ void OculusToSteamVR::VRDriver::Cleanup()
 
 void OculusToSteamVR::VRDriver::RunFrame()
 {
-    // Collect events
+    //Collect events.
     vr::VREvent_t event;
     std::vector<vr::VREvent_t> events;
     while (vr::VRServerDriverHost()->PollNextEvent(&event, sizeof(event))) events.push_back(event);
     this->openvr_events_ = events;
 
-    // Update frame timing
+    //Update frame timing.
     std::chrono::system_clock::time_point now = std::chrono::system_clock::now();
     this->frame_timing_ = std::chrono::duration_cast<std::chrono::milliseconds>(now - this->last_frame_time_);
     this->last_frame_time_ = now;
 
-    // Update devices
+    //Update devices.
     for (auto& device : this->devices_) device->Update();
 }
 

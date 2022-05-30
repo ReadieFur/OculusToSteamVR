@@ -8,6 +8,8 @@
 #include <IVRDriver.hpp>
 #include <IVRDevice.hpp>
 
+#include <SharedData.hpp>
+
 namespace OculusToSteamVR
 {
     class VRDriver : public IVRDriver
@@ -40,5 +42,8 @@ namespace OculusToSteamVR
         std::chrono::milliseconds frame_timing_ = std::chrono::milliseconds(16);
         std::chrono::system_clock::time_point last_frame_time_ = std::chrono::system_clock::now();
         std::string settings_key_ = "driver_oculus_to_steamvr";
+        SharedData* sharedBuffer;
+        
+        virtual vr::EVRInitError InitSharedData();
     };
 };

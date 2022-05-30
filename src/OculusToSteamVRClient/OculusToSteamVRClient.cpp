@@ -23,13 +23,13 @@ struct SharedData
 	unsigned int vrObjectsCount;
 };
 
-void VRLoop(ovrSession oSession, HANDLE sharedMutex, SharedData* sharedBuffer, uint64_t frameCount,
+void VRLoop(ovrSession oSession/*, HANDLE sharedMutex*/, SharedData* sharedBuffer, uint64_t frameCount,
 	ovrHapticsBuffer& oHapticsBuffer, uint8_t* hapticsBuffer, unsigned int hapticsBufferSize)
 {
 	ovrTrackingState oTrackingState = ovr_GetTrackingState(oSession, 0, false);
 	sharedBuffer->oTrackingState = oTrackingState;
 
-	WaitForSingleObject(sharedMutex, INFINITE);
+	//WaitForSingleObject(sharedMutex, INFINITE);
 
 	bool shouldLog = SHOULD_LOG(frameCount);
 	double frameTime = ovr_GetPredictedDisplayTime(oSession, frameCount);
@@ -102,28 +102,23 @@ void VRLoop(ovrSession oSession, HANDLE sharedMutex, SharedData* sharedBuffer, u
 	if (shouldLog) std::cout << std::endl;
 }
 
-int InitSharedData(HANDLE& hMapFile, SharedData*& sharedBuffer, HANDLE& sharedMutex)
+int InitSharedData(HANDLE& hMapFile, SharedData*& sharedBuffer/*, HANDLE& sharedMutex*/)
 {
-	hMapFile = CreateFileMapping(
-		INVALID_HANDLE_VALUE, //Use paging file.
-		NULL, //Default security.
-		PAGE_READWRITE, //Read/write access.
-		0, //Maximum object size (high-order DWORD).
-		sizeof(SharedData), //Maximum object size (low-order DWORD).
-		L"Local\\ovr_client_shared_data" //Name of mapping object.
-	);
+	hMapFile = OpenFileMapping(
+		FILE_MAP_ALL_ACCESS, //Read/write access.
+		FALSE, //Do not inherit the name.
+		L"Local\\ovr_client_shared_data"); //Name of mapping object.
 	if (hMapFile == NULL)
 	{
 		std::cout << "Could not open file mapping object " << GetLastError() << std::endl;
 		return 2;
 	}
 
-	sharedBuffer = new(MapViewOfFile(
-		hMapFile, //Handle to map object.
-		FILE_MAP_ALL_ACCESS,  //Read/write permission.
+	sharedBuffer = (SharedData*)MapViewOfFile(hMapFile, //Handle to map object.
+		FILE_MAP_ALL_ACCESS, //Read/write permission.
 		0,
 		0,
-		sizeof(SharedData)))SharedData();
+		sizeof(SharedData));
 	if (sharedBuffer == NULL)
 	{
 		std::cout << "Could not map view of file " << GetLastError() << std::endl;
@@ -131,11 +126,11 @@ int InitSharedData(HANDLE& hMapFile, SharedData*& sharedBuffer, HANDLE& sharedMu
 		return 2;
 	}
 
-	sharedMutex = CreateMutex(0, true, L"Local\\ovr_client_shared_mutex");
+	/*sharedMutex = CreateMutex(0, true, L"Local\\ovr_client_shared_mutex");
 	WaitForSingleObject(
 		sharedMutex,    // handle to mutex
 		INFINITE);  // no time-out interval
-	ReleaseMutex(sharedMutex);
+	ReleaseMutex(sharedMutex);*/
 
 	return 0;
 }
@@ -152,8 +147,8 @@ int main()
 
 	HANDLE hMapFile;
 	SharedData* sharedBuffer;
-	HANDLE sharedMutex;
-	int initSharedBufferResult = InitSharedData(hMapFile, sharedBuffer, sharedMutex);
+	//HANDLE sharedMutex;
+	int initSharedBufferResult = InitSharedData(hMapFile, sharedBuffer/*, sharedMutex*/);
 	if (initSharedBufferResult != 0) return initSharedBufferResult;
 
 	ovrResult oResult;
@@ -192,7 +187,7 @@ int main()
 		ovr_GetSessionStatus(oSession, &sessionStatus);
 		if (sessionStatus.ShouldQuit) break;
 
-		VRLoop(oSession, sharedMutex, sharedBuffer, frameCount, oHapticsBuffer, hapticsBuffer, hapticsBufferSize);
+		VRLoop(oSession/*, sharedMutex*/, sharedBuffer, frameCount, oHapticsBuffer, hapticsBuffer, hapticsBufferSize);
 
 		frameCount++;
 		Sleep(1);
