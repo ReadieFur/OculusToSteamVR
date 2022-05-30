@@ -2,6 +2,7 @@
 #include <Windows.h>
 #include <mutex>
 #include <thread>
+#include <chrono>
 #include <OVR_CAPI.h>
 #include <map>
 
@@ -12,8 +13,10 @@
 * 3 Initialization error.
 */
 
+#define RUN_INTERVAL 90 //Set to 90 becuase that is the max update rate of the Oculus sensors.
+
 #if TRUE
-#define SHOULD_LOG(frameCount) (frameCount % 1000 == 0) //Slower but for debugging (because i dont understand the &).
+#define SHOULD_LOG(frameCount) (frameCount % (RUN_INTERVAL * 5) == 0) //Slower but I'm using this because I don't understand the & (Log every 5s).
 #else
 #define SHOULD_LOG(frameCount) (frameCount & 0x7FF)
 #endif
@@ -219,8 +222,13 @@ int main()
 	unsigned int vrObjectsCount = (ovr_GetConnectedControllerTypes(oSession) >> 8) & 0xf;
 	sharedBuffer->vrObjectsCount = vrObjectsCount;
 
+	//Run up to x times per second.
+	//Add this inside the loop to allow for a dynamic rate synced with the SteamVR frame rate?
+	long double minFrameTime = (1000 / RUN_INTERVAL) * 1000; //(ms/interval)*ms_to_microseconds.
 	while (true)
 	{
+		std::chrono::steady_clock::time_point startTime = std::chrono::high_resolution_clock::now();
+
 		ovrSessionStatus sessionStatus;
 		ovr_GetSessionStatus(oSession, &sessionStatus);
 		if (sessionStatus.ShouldQuit) break;
@@ -228,7 +236,9 @@ int main()
 		VRLoop(oSession/*, sharedMutex*/, sharedBuffer, frameCount, oHapticsBuffer, hapticsBuffer, hapticsBufferSize);
 
 		frameCount++;
-		Sleep(1);
+
+		long double duration = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - startTime).count();
+		if (duration < minFrameTime) Sleep((minFrameTime - duration) / 1000);
 	}
 
 	return 0;
