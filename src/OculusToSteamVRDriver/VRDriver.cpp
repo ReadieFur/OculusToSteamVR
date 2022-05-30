@@ -10,38 +10,63 @@
 
 vr::EVRInitError OculusToSteamVR::VRDriver::InitSharedData()
 {
-    HANDLE hMapFile = CreateFileMappingW(
-        INVALID_HANDLE_VALUE, //Use paging file.
-        NULL, //Default security.
-        PAGE_READWRITE, //Read/write access.
-        0, //Maximum object size (high-order DWORD).
-        sizeof(SharedData), //Maximum object size (low-order DWORD).
-        L"Local\\ovr_client_shared_data" //Name of mapping object.
-    );
+    bool didCreateMapping = false;
+
+    //Try to connect to an existing object.
+    HANDLE hMapFile = OpenFileMappingW(
+        FILE_MAP_ALL_ACCESS, //Read/write access.
+        FALSE, //Do not inherit the name.
+        L"Local\\ovr_client_shared_data"); //Name of mapping object.
     if (hMapFile == NULL)
     {
-        Log("Could not open file mapping object " + GetLastError());
-        return vr::VRInitError_IPC_SharedStateInitFailed;
+        //If it failed/no object was available, try to create a new one.
+        hMapFile = CreateFileMappingW(
+            INVALID_HANDLE_VALUE, //Use paging file.
+            NULL, //Default security.
+            PAGE_READWRITE, //Read/write access.
+            0, //Maximum object size (high-order DWORD).
+            sizeof(SharedData), //Maximum object size (low-order DWORD).
+            L"Local\\ovr_client_shared_data" //Name of mapping object.
+        );
+        if (hMapFile == NULL)
+        {
+            //If this failed then something went wrong.
+            Log("Could not open file mapping object " + GetLastError());
+            return vr::VRInitError_IPC_SharedStateInitFailed;
+        }
+    }
+    else didCreateMapping = false;
+
+    if (!didCreateMapping)
+    {
+        sharedBuffer = (SharedData*)MapViewOfFile(hMapFile, //Handle to map object.
+            FILE_MAP_ALL_ACCESS, //Read/write permission.
+            0,
+            0,
+            sizeof(SharedData));
+    }
+    else
+    {
+        sharedBuffer = new(MapViewOfFile(
+            hMapFile, //Handle to map object.
+            FILE_MAP_ALL_ACCESS, //Read/write permission.
+            0,
+            0,
+            sizeof(SharedData)))SharedData();
+
+        HANDLE sharedMutex = CreateMutexW(0, true, L"Local\\ovr_client_shared_mutex");
+        WaitForSingleObject(
+            sharedMutex, //Handle to mutex.
+            INFINITE); //No time-out interval.
+        ReleaseMutex(sharedMutex);
     }
 
-    sharedBuffer = new(MapViewOfFile(
-        hMapFile, //Handle to map object.
-        FILE_MAP_ALL_ACCESS,  //Read/write permission.
-        0,
-        0,
-        sizeof(SharedData)))SharedData();
     if (sharedBuffer == NULL)
     {
         Log("Could not map view of file " + GetLastError());
         CloseHandle(hMapFile);
         return vr::VRInitError_IPC_SharedStateInitFailed;
     }
-
-    HANDLE sharedMutex = CreateMutexW(0, true, L"Local\\ovr_client_shared_mutex");
-    WaitForSingleObject(
-        sharedMutex,    // handle to mutex
-        INFINITE);  // no time-out interval
-    ReleaseMutex(sharedMutex);
 
     return vr::VRInitError_None;
 }

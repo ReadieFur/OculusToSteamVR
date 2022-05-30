@@ -104,33 +104,62 @@ void VRLoop(ovrSession oSession/*, HANDLE sharedMutex*/, SharedData* sharedBuffe
 
 int InitSharedData(HANDLE& hMapFile, SharedData*& sharedBuffer/*, HANDLE& sharedMutex*/)
 {
-	hMapFile = OpenFileMapping(
+	bool didCreateMapping = false;
+
+	//Try to connect to an existing object.
+	hMapFile = OpenFileMappingW(
 		FILE_MAP_ALL_ACCESS, //Read/write access.
 		FALSE, //Do not inherit the name.
 		L"Local\\ovr_client_shared_data"); //Name of mapping object.
 	if (hMapFile == NULL)
 	{
-		std::cout << "Could not open file mapping object " << GetLastError() << std::endl;
-		return 2;
+		//If it failed/no object was available, try to create a new one.
+		hMapFile = CreateFileMappingW(
+			INVALID_HANDLE_VALUE, //Use paging file.
+			NULL, //Default security.
+			PAGE_READWRITE, //Read/write access.
+			0, //Maximum object size (high-order DWORD).
+			sizeof(SharedData), //Maximum object size (low-order DWORD).
+			L"Local\\ovr_client_shared_data" //Name of mapping object.
+		);
+		if (hMapFile == NULL)
+		{
+			std::cout << "Could not open file mapping object " << GetLastError() << std::endl;
+			return 2;
+		}
+	}
+	else didCreateMapping = false;
+
+	if (!didCreateMapping)
+	{
+		sharedBuffer = (SharedData*)MapViewOfFile(hMapFile, //Handle to map object.
+			FILE_MAP_ALL_ACCESS, //Read/write permission.
+			0,
+			0,
+			sizeof(SharedData));
+	}
+	else
+	{
+		sharedBuffer = new(MapViewOfFile(
+			hMapFile, //Handle to map object.
+			FILE_MAP_ALL_ACCESS, //Read/write permission.
+			0,
+			0,
+			sizeof(SharedData)))SharedData();
+
+		HANDLE sharedMutex = CreateMutexW(0, true, L"Local\\ovr_client_shared_mutex");
+		WaitForSingleObject(
+			sharedMutex, //Handle to mutex.
+			INFINITE); //No time-out interval.
+		ReleaseMutex(sharedMutex);
 	}
 
-	sharedBuffer = (SharedData*)MapViewOfFile(hMapFile, //Handle to map object.
-		FILE_MAP_ALL_ACCESS, //Read/write permission.
-		0,
-		0,
-		sizeof(SharedData));
 	if (sharedBuffer == NULL)
 	{
 		std::cout << "Could not map view of file " << GetLastError() << std::endl;
 		CloseHandle(hMapFile);
 		return 2;
 	}
-
-	/*sharedMutex = CreateMutex(0, true, L"Local\\ovr_client_shared_mutex");
-	WaitForSingleObject(
-		sharedMutex,    // handle to mutex
-		INFINITE);  // no time-out interval
-	ReleaseMutex(sharedMutex);*/
 
 	return 0;
 }
