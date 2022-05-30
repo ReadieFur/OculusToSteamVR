@@ -29,6 +29,42 @@ struct SharedData
 	std::map<int, ovrPoseStatef> vrObjectsPose;
 };
 
+//https://github.com/mm0zct/Oculus_Touch_Steam_Link/blob/main/CustomHMD/OculusTouchLink.cpp#L806
+ovrQuatf OVRQuatFMul(ovrQuatf q1, ovrQuatf q2)
+{
+	ovrQuatf result = { 0 };
+	result.x = q1.x * q2.w + q1.y * q2.z - q1.z * q2.y + q1.w * q2.x;
+	result.y = -q1.x * q2.z + q1.y * q2.w + q1.z * q2.x + q1.w * q2.y;
+	result.z = q1.x * q2.y - q1.y * q2.x + q1.z * q2.w + q1.w * q2.z;
+	result.w = -q1.x * q2.x - q1.y * q2.y - q1.z * q2.z + q1.w * q2.w;
+	return result;
+}
+
+//https://github.com/mm0zct/Oculus_Touch_Steam_Link/blob/main/CustomHMD/OculusTouchLink.cpp#L372
+ovrVector3f crossProduct(const ovrVector3f v, ovrVector3f p)
+{
+	return ovrVector3f{ v.y * p.z - v.z * p.y, v.z * p.x - v.x * p.z, v.x * p.y - v.y * p.x };
+}
+
+//https://github.com/mm0zct/Oculus_Touch_Steam_Link/blob/main/CustomHMD/OculusTouchLink.cpp#L832
+ovrVector3f RotateVector2(ovrVector3f v, ovrQuatf q)
+{
+	// nVidia SDK implementation
+
+	ovrVector3f uv, uuv;
+	ovrVector3f qvec{ q.x, q.y, q.z };
+	uv = crossProduct(qvec, v);
+	uuv = crossProduct(qvec, uv);
+	uv.x *= (2.0f * q.w);
+	uv.y *= (2.0f * q.w);
+	uv.z *= (2.0f * q.w);
+	uuv.x *= 2.0f;
+	uuv.y *= 2.0f;
+	uuv.z *= 2.0f;
+
+	return ovrVector3f{ v.x + uv.x + uuv.x, v.y + uv.y + uuv.y, v.z + uv.z + uuv.z };
+}
+
 void VRLoop(ovrSession oSession/*, HANDLE sharedMutex*/, SharedData* sharedBuffer, uint64_t frameCount,
 	ovrHapticsBuffer& oHapticsBuffer, uint8_t* hapticsBuffer, unsigned int hapticsBufferSize)
 {
@@ -59,6 +95,7 @@ void VRLoop(ovrSession oSession/*, HANDLE sharedMutex*/, SharedData* sharedBuffe
 		ovrInputState oInputState;
 		ovrResult oResult;
 
+		//TODO.
 		if (i == 1)
 		{
 			oResult = ovr_GetInputState(oSession, ovrControllerType::ovrControllerType_RTouch, &oInputState);
@@ -68,6 +105,33 @@ void VRLoop(ovrSession oSession/*, HANDLE sharedMutex*/, SharedData* sharedBuffe
 			oResult = ovr_GetInputState(oSession, ovrControllerType::ovrControllerType_LTouch, &oInputState);
 		}
 
+#pragma region Offsets
+		//https://github.com/mm0zct/Oculus_Touch_Steam_Link/blob/main/CustomHMD/OculusTouchLink.cpp#L872
+		const ovrQuatf handQuatOffsets = { 0.3420201, 0, 0, 0.9396926 };
+		const ovrVector3f rightHandVectorOffsets = { 0.00571, 0.04078, -0.03531 };
+		const ovrVector3f handVectorOffsets2 = { -0.000999998, -0.1, 0.0019 };
+
+		ovrQuatf handInputOrientation = sharedBuffer->oTrackingState.HandPoses[i].ThePose.Orientation;
+		ovrQuatf handCorrectedOrientation = OVRQuatFMul(handInputOrientation, handQuatOffsets);
+		ovrVector3f handVectorOffsets = { 0,0,0 };
+
+		//Apply left or right offset.
+		if (i == ovrHand_Right) handVectorOffsets = RotateVector2(rightHandVectorOffsets, handInputOrientation);
+		else
+		{
+			ovrVector3f leftHandVectorOffset = rightHandVectorOffsets;
+			leftHandVectorOffset.x = -leftHandVectorOffset.x;
+			handVectorOffsets = RotateVector2(leftHandVectorOffset, handInputOrientation);
+		}
+
+		//Update values.
+		sharedBuffer->oTrackingState.HandPoses[i].ThePose.Position.x += handVectorOffsets.x/* + handVectorOffsets2.x*/;
+		sharedBuffer->oTrackingState.HandPoses[i].ThePose.Position.y += handVectorOffsets.y/* + handVectorOffsets2.y*/;
+		sharedBuffer->oTrackingState.HandPoses[i].ThePose.Position.z += handVectorOffsets.z/* + handVectorOffsets2.z*/;
+		sharedBuffer->oTrackingState.HandPoses[i].ThePose.Orientation = handCorrectedOrientation;
+#pragma endregion
+
+		//Update input state values.
 		sharedBuffer->oInputState[i] = oInputState;
 
 		if (shouldLog)
