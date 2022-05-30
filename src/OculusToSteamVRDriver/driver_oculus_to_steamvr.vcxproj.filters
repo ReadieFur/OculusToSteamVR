@@ -54,6 +54,9 @@
     <ClInclude Include="SharedData.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="OculusDeviceType.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="O:\GitHub\ReadieFur\OculusToSteamVR\src\OculusToSteamVRDriver\CMakeLists.txt" />

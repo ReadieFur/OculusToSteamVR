@@ -7,6 +7,7 @@
 
 #include <IVRDevice.hpp>
 #include <DriverFactory.hpp>
+#include <OculusDeviceType.hpp>
 
 namespace OculusToSteamVR
 {
@@ -14,12 +15,12 @@ namespace OculusToSteamVR
     {
         public:
 
-            TrackerDevice(std::string serial);
+            TrackerDevice(std::string serial, OculusDeviceType oculusDeviceType);
             ~TrackerDevice() = default;
 
             //Inherited via IVRDevice.
             virtual std::string GetSerial() override;
-            virtual void Update(ovrPosef pose) override;
+            virtual void Update(SharedData* sharedBuffer) override;
             virtual vr::TrackedDeviceIndex_t GetDeviceIndex() override;
             virtual DeviceType GetDeviceType() override;
 
@@ -33,6 +34,7 @@ namespace OculusToSteamVR
     private:
         vr::TrackedDeviceIndex_t device_index_ = vr::k_unTrackedDeviceIndexInvalid;
         std::string serial_;
+        OculusDeviceType oculus_device_type_;
 
         vr::DriverPose_t last_pose_ = IVRDevice::MakeDefaultPose();
 

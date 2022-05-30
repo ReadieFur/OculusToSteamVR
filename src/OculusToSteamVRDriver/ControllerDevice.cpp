@@ -5,6 +5,7 @@ OculusToSteamVR::ControllerDevice::ControllerDevice(std::string serial, Controll
     serial_(serial),
     handedness_(handedness)
 {
+    this->oHandType_ = handedness == Handedness::LEFT ? ovrHandType::ovrHand_Left : ovrHandType::ovrHand_Right;
 }
 
 std::string OculusToSteamVR::ControllerDevice::GetSerial()
@@ -12,7 +13,7 @@ std::string OculusToSteamVR::ControllerDevice::GetSerial()
     return this->serial_;
 }
 
-void OculusToSteamVR::ControllerDevice::Update(ovrPosef pose)
+void OculusToSteamVR::ControllerDevice::Update(SharedData* sharedBuffer)
 {
     if (this->device_index_ == vr::k_unTrackedDeviceIndexInvalid)
         return;
@@ -44,26 +45,13 @@ void OculusToSteamVR::ControllerDevice::Update(ovrPosef pose)
     // Setup pose for this frame
     auto newPose = IVRDevice::MakeDefaultPose();
 
-    newPose.vecPosition[0] = pose.Position.x;
-    newPose.vecPosition[1] = pose.Position.y;
-    newPose.vecPosition[2] = pose.Position.z;
-    newPose.qRotation.w = pose.Orientation.w;
-    newPose.qRotation.x = pose.Orientation.x;
-    newPose.qRotation.y = pose.Orientation.y;
-    newPose.qRotation.z = pose.Orientation.z;
-
-    // Check if we need to press any buttons (I am only hooking up the A button here but the process is the same for the others)
-    // You will still need to go into the games button bindings and hook up each one (ie. a to left click, b to right click, etc.) for them to work properly
-    if (GetAsyncKeyState(0x45 /* E */) != 0)
-    {
-        GetDriver()->GetInput()->UpdateBooleanComponent(this->a_button_click_component_, true, 0);
-        GetDriver()->GetInput()->UpdateBooleanComponent(this->a_button_touch_component_, true, 0);
-    }
-    else
-    {
-        GetDriver()->GetInput()->UpdateBooleanComponent(this->a_button_click_component_, false, 0);
-        GetDriver()->GetInput()->UpdateBooleanComponent(this->a_button_touch_component_, false, 0);
-    }
+    newPose.vecPosition[0] = sharedBuffer->oTrackingState.HandPoses[oHandType_].ThePose.Position.x;
+    newPose.vecPosition[1] = sharedBuffer->oTrackingState.HandPoses[oHandType_].ThePose.Position.y;
+    newPose.vecPosition[2] = sharedBuffer->oTrackingState.HandPoses[oHandType_].ThePose.Position.z;
+    newPose.qRotation.w = sharedBuffer->oTrackingState.HandPoses[oHandType_].ThePose.Orientation.w;
+    newPose.qRotation.x = sharedBuffer->oTrackingState.HandPoses[oHandType_].ThePose.Orientation.x;
+    newPose.qRotation.y = sharedBuffer->oTrackingState.HandPoses[oHandType_].ThePose.Orientation.y;
+    newPose.qRotation.z = sharedBuffer->oTrackingState.HandPoses[oHandType_].ThePose.Orientation.z;
 
     // Post pose
     GetDriver()->GetDriverHost()->TrackedDevicePoseUpdated(this->device_index_, newPose, sizeof(vr::DriverPose_t));

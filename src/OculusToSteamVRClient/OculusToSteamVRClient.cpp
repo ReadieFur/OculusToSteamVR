@@ -3,6 +3,7 @@
 #include <mutex>
 #include <thread>
 #include <OVR_CAPI.h>
+#include <map>
 
 /*Exit codes:
 * 0 Ok.
@@ -20,7 +21,9 @@
 struct SharedData
 {
 	ovrTrackingState oTrackingState;
+	ovrInputState oInputState[2];
 	unsigned int vrObjectsCount;
+	std::map<int, ovrPoseStatef> vrObjectsPose;
 };
 
 void VRLoop(ovrSession oSession/*, HANDLE sharedMutex*/, SharedData* sharedBuffer, uint64_t frameCount,
@@ -62,6 +65,8 @@ void VRLoop(ovrSession oSession/*, HANDLE sharedMutex*/, SharedData* sharedBuffe
 			oResult = ovr_GetInputState(oSession, ovrControllerType::ovrControllerType_LTouch, &oInputState);
 		}
 
+		sharedBuffer->oInputState[i] = oInputState;
+
 		if (shouldLog)
 		{
 			std::cout << (i == 0 ? "Left Hand" : "Right Hand")
@@ -79,14 +84,14 @@ void VRLoop(ovrSession oSession/*, HANDLE sharedMutex*/, SharedData* sharedBuffe
 	}
 
 	//Objects.
-	unsigned int vrObjectsCount = (ovr_GetConnectedControllerTypes(oSession) >> 8) & 0xf; //ovr_GetTrackerCount?
-	sharedBuffer->vrObjectsCount = vrObjectsCount;
-	for (int i = 0; i < vrObjectsCount; i++)
+	//I believe this represents the VRObjects feature that Oculus has, however when I mapped my left controller as an object it never appeared here.
+	for (int i = 0; i < sharedBuffer->vrObjectsCount; i++)
 	{
 		ovrTrackedDeviceType deviceType = (ovrTrackedDeviceType)(ovrTrackedDevice_Object0 + i);
 		ovrPoseStatef oPose;
 
 		ovr_GetDevicePoses(oSession, &deviceType, 1, frameTime, &oPose);
+		sharedBuffer->vrObjectsPose[i] = oPose;
 
 		//Bit-shift? to display every ? frames. (I don't understand the bit shift so I don't know how often this runs).
 		if (shouldLog)
@@ -209,6 +214,10 @@ int main()
 	oHapticsBuffer.SamplesCount = hapticsBufferSize;
 	oHapticsBuffer.SubmitMode = ovrHapticsBufferSubmit_Enqueue;
 	for (int i = 0; i < hapticsBufferSize; i++) hapticsBuffer[i] = 255;
+
+	//TODO: Make this dynamic as I believe the count here can change at any time.
+	unsigned int vrObjectsCount = (ovr_GetConnectedControllerTypes(oSession) >> 8) & 0xf;
+	sharedBuffer->vrObjectsCount = vrObjectsCount;
 
 	while (true)
 	{

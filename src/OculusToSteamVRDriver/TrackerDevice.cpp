@@ -1,8 +1,9 @@
 #include "TrackerDevice.hpp"
 #include <Windows.h>
 
-OculusToSteamVR::TrackerDevice::TrackerDevice(std::string serial):
-    serial_(serial)
+OculusToSteamVR::TrackerDevice::TrackerDevice(std::string serial, OculusDeviceType oculusDeviceType):
+    serial_(serial),
+    oculus_device_type_(oculusDeviceType)
 {
 }
 
@@ -11,7 +12,7 @@ std::string OculusToSteamVR::TrackerDevice::GetSerial()
     return this->serial_;
 }
 
-void OculusToSteamVR::TrackerDevice::Update(ovrPosef pose)
+void OculusToSteamVR::TrackerDevice::Update(SharedData* sharedBuffer)
 {
     if (this->device_index_ == vr::k_unTrackedDeviceIndexInvalid)
         return;
@@ -42,6 +43,31 @@ void OculusToSteamVR::TrackerDevice::Update(ovrPosef pose)
 
     // Setup pose for this frame
     auto newPose = IVRDevice::MakeDefaultPose();
+
+    bool validObject = true;
+    ovrPosef pose;
+    switch (oculus_device_type_)
+    {
+    case HMD:
+        pose = sharedBuffer->oTrackingState.HeadPose.ThePose;
+        break;
+    case Controller_Left:
+        pose = sharedBuffer->oTrackingState.HandPoses[ovrHandType::ovrHand_Left].ThePose;
+        break;
+    case Controller_Right:
+        pose = sharedBuffer->oTrackingState.HandPoses[ovrHandType::ovrHand_Right].ThePose;
+        break;
+    default:
+        validObject = false;
+        break;
+    }
+    if (!validObject && oculus_device_type_ == Object)
+    {
+        int index = atoi(this->serial_.substr(13).c_str()); //13 -> "oculus_object"
+        if (sharedBuffer->vrObjectsPose.find(index) == sharedBuffer->vrObjectsPose.end()) return;
+        pose = sharedBuffer->vrObjectsPose[index].ThePose;
+    }
+    else if (!validObject) return;
 
     newPose.vecPosition[0] = pose.Position.x;
     newPose.vecPosition[1] = pose.Position.y;

@@ -437,6 +437,7 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
     <ClCompile Include="O:\GitHub\ReadieFur\OculusToSteamVR\src\OculusToSteamVRDriver\TrackerDevice.cpp" />
     <ClCompile Include="O:\GitHub\ReadieFur\OculusToSteamVR\src\OculusToSteamVRDriver\TrackingReferenceDevice.cpp" />
     <ClCompile Include="O:\GitHub\ReadieFur\OculusToSteamVR\src\OculusToSteamVRDriver\VRDriver.cpp" />
+    <ClInclude Include="OculusDeviceType.hpp" />
     <ClInclude Include="SharedData.hpp" />
   </ItemGroup>
   <ItemGroup>

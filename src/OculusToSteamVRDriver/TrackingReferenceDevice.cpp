@@ -14,7 +14,7 @@ std::string OculusToSteamVR::TrackingReferenceDevice::GetSerial()
     return this->serial_;
 }
 
-void OculusToSteamVR::TrackingReferenceDevice::Update(ovrPosef pose)
+void OculusToSteamVR::TrackingReferenceDevice::Update(SharedData* sharedBuffer)
 {
     if (this->device_index_ == vr::k_unTrackedDeviceIndexInvalid)
         return;

@@ -25,7 +25,7 @@ namespace OculusToSteamVR
 
             //Inherited via IVRDevice.
             virtual std::string GetSerial() override;
-            virtual void Update(ovrPosef pose) override;
+            virtual void Update(SharedData* sharedBuffer) override;
             virtual vr::TrackedDeviceIndex_t GetDeviceIndex() override;
             virtual DeviceType GetDeviceType() override;
             virtual Handedness GetHandedness();
@@ -41,6 +41,7 @@ namespace OculusToSteamVR
         vr::TrackedDeviceIndex_t device_index_ = vr::k_unTrackedDeviceIndexInvalid;
         std::string serial_;
         Handedness handedness_;
+        ovrHandType oHandType_;
 
         vr::DriverPose_t last_pose_;
 

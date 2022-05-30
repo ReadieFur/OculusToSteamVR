@@ -10,7 +10,7 @@ std::string OculusToSteamVR::HMDDevice::GetSerial()
     return this->serial_;
 }
 
-void OculusToSteamVR::HMDDevice::Update(ovrPosef pose)
+void OculusToSteamVR::HMDDevice::Update(SharedData* sharedBuffer)
 {
     if (this->device_index_ == vr::k_unTrackedDeviceIndexInvalid)
         return;
@@ -18,13 +18,13 @@ void OculusToSteamVR::HMDDevice::Update(ovrPosef pose)
     // Setup pose for this frame
     auto newPose = IVRDevice::MakeDefaultPose();
 
-    newPose.vecPosition[0] = pose.Position.x;
-    newPose.vecPosition[1] = pose.Position.y;
-    newPose.vecPosition[2] = pose.Position.z;
-    newPose.qRotation.w = pose.Orientation.w;
-    newPose.qRotation.x = pose.Orientation.x;
-    newPose.qRotation.y = pose.Orientation.y;
-    newPose.qRotation.z = pose.Orientation.z;
+    newPose.vecPosition[0] = sharedBuffer->oTrackingState.HeadPose.ThePose.Position.x;
+    newPose.vecPosition[1] = sharedBuffer->oTrackingState.HeadPose.ThePose.Position.y;
+    newPose.vecPosition[2] = sharedBuffer->oTrackingState.HeadPose.ThePose.Position.z;
+    newPose.qRotation.w = sharedBuffer->oTrackingState.HeadPose.ThePose.Orientation.w;
+    newPose.qRotation.x = sharedBuffer->oTrackingState.HeadPose.ThePose.Orientation.x;
+    newPose.qRotation.y = sharedBuffer->oTrackingState.HeadPose.ThePose.Orientation.y;
+    newPose.qRotation.z = sharedBuffer->oTrackingState.HeadPose.ThePose.Orientation.z;
 
     // Post pose
     GetDriver()->GetDriverHost()->TrackedDevicePoseUpdated(this->device_index_, newPose, sizeof(vr::DriverPose_t));
