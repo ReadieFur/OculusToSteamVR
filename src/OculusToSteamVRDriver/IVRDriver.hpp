@@ -5,11 +5,12 @@
 
 #include <IVRDevice.hpp>
 
-namespace OculusToSteamVR {
-
+namespace OculusToSteamVR
+{
     typedef std::variant<std::monostate, std::string, int, float, bool> SettingsValue;
 
-    class IVRDriver : protected vr::IServerTrackedDeviceProvider {
+    class IVRDriver : protected vr::IServerTrackedDeviceProvider
+    {
     public:
 
         /// <summary>
@@ -68,12 +69,11 @@ namespace OculusToSteamVR {
         /// <param name="message">Message to log</param>
         virtual void Log(std::string message) = 0;
 
-        virtual inline const char* const* GetInterfaceVersions() override {
+        virtual inline const char* const* GetInterfaceVersions() override
+        {
             return vr::k_InterfaceVersions;
         };
 
         virtual ~IVRDriver() {}
-
     };
 }
-

@@ -4,9 +4,10 @@
 #include <openvr_driver.h>
 #include <DeviceType.hpp>
 
-namespace OculusToSteamVR {
-
-    class IVRDevice : public vr::ITrackedDeviceServerDriver {
+namespace OculusToSteamVR
+{
+    class IVRDevice : public vr::ITrackedDeviceServerDriver
+    {
     public:
         /// <summary>
         /// Returns the serial string for this device
@@ -37,7 +38,8 @@ namespace OculusToSteamVR {
         /// Makes a default device pose 
         /// </summary>
         /// <returns>Default initialised pose</returns>
-        static inline vr::DriverPose_t MakeDefaultPose(bool connected = true, bool tracking = true) {
+        static inline vr::DriverPose_t MakeDefaultPose(bool connected = true, bool tracking = true)
+        {
             vr::DriverPose_t out_pose = { 0 };
 
             out_pose.deviceIsConnected = connected;
@@ -50,7 +52,7 @@ namespace OculusToSteamVR {
             return out_pose;
         }
 
-        // Inherited via ITrackedDeviceServerDriver
+        //Inherited via ITrackedDeviceServerDriver.
         virtual vr::EVRInitError Activate(uint32_t unObjectId) = 0;
         virtual void Deactivate() = 0;
         virtual void EnterStandby() = 0;

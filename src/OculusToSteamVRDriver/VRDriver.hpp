@@ -8,12 +8,12 @@
 #include <IVRDriver.hpp>
 #include <IVRDevice.hpp>
 
-namespace OculusToSteamVR {
-    class VRDriver : public IVRDriver {
+namespace OculusToSteamVR
+{
+    class VRDriver : public IVRDriver
+    {
     public:
-
-
-        // Inherited via IVRDriver
+        //Inherited via IVRDriver.
         virtual std::vector<std::shared_ptr<IVRDevice>> GetDevices() override;
         virtual std::vector<vr::VREvent_t> GetOpenVREvents() override;
         virtual std::chrono::milliseconds GetLastFrameTime() override;
@@ -25,7 +25,7 @@ namespace OculusToSteamVR {
         virtual vr::CVRPropertyHelpers* GetProperties() override;
         virtual vr::IVRServerDriverHost* GetDriverHost() override;
 
-        // Inherited via IServerTrackedDeviceProvider
+        //Inherited via IServerTrackedDeviceProvider.
         virtual vr::EVRInitError Init(vr::IVRDriverContext* pDriverContext) override;
         virtual void Cleanup() override;
         virtual void RunFrame() override;
@@ -40,6 +40,5 @@ namespace OculusToSteamVR {
         std::chrono::milliseconds frame_timing_ = std::chrono::milliseconds(16);
         std::chrono::system_clock::time_point last_frame_time_ = std::chrono::system_clock::now();
         std::string settings_key_ = "driver_oculus_to_steamvr";
-
     };
 };

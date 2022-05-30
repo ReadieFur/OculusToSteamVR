@@ -41,7 +41,8 @@ void OculusToSteamVR::HMDDevice::Update()
     linalg::vec<float, 3> forward_vec{-1.0f * (GetAsyncKeyState(0x44) == 0) + 1.0f * (GetAsyncKeyState(0x41) == 0), 0, 0};
     linalg::vec<float, 3> right_vec{0, 0, 1.0f * (GetAsyncKeyState(0x57) == 0) - 1.0f * (GetAsyncKeyState(0x53) == 0) };
     linalg::vec<float, 3> final_dir = forward_vec + right_vec;
-    if (linalg::length(final_dir) > 0.01) {
+    if (linalg::length(final_dir) > 0.01)
+    {
         final_dir = linalg::normalize(final_dir) * (float)delta_seconds;
         final_dir = linalg::qrot(pose_rot, final_dir);
         this->pos_x_ += final_dir.x;
@@ -76,28 +77,32 @@ vr::EVRInitError OculusToSteamVR::HMDDevice::Activate(uint32_t unObjectId)
 
     // Load settings values
     // Could probably make this cleaner with making a wrapper class
-    try {
+    try
+    {
         int window_x = std::get<int>(GetDriver()->GetSettingsValue("window_x"));
         if (window_x > 0)
             this->window_x_ = window_x;
     }
     catch (const std::bad_variant_access&) {}; // Wrong type or doesnt exist
 
-    try {
+    try
+    {
         int window_y = std::get<int>(GetDriver()->GetSettingsValue("window_y"));
         if (window_y > 0)
             this->window_x_ = window_y;
     }
     catch (const std::bad_variant_access&) {}; // Wrong type or doesnt exist
 
-    try {
+    try
+    {
         int window_width = std::get<int>(GetDriver()->GetSettingsValue("window_width"));
         if (window_width > 0)
             this->window_width_ = window_width;
     }
     catch (const std::bad_variant_access&) {}; // Wrong type or doesnt exist
 
-    try {
+    try
+    {
         int window_height = std::get<int>(GetDriver()->GetSettingsValue("window_height"));
         if (window_height > 0)
             this->window_height_ = window_height;
@@ -130,9 +135,6 @@ vr::EVRInitError OculusToSteamVR::HMDDevice::Activate(uint32_t unObjectId)
     GetDriver()->GetProperties()->SetStringProperty(props, vr::Prop_NamedIconPathDeviceStandby_String, "{oculus_to_steamvr}/icons/hmd_not_ready.png");
     GetDriver()->GetProperties()->SetStringProperty(props, vr::Prop_NamedIconPathDeviceAlertLow_String, "{oculus_to_steamvr}/icons/hmd_not_ready.png");
 
-    
-
-
     return vr::EVRInitError::VRInitError_None;
 }
 
@@ -147,7 +149,8 @@ void OculusToSteamVR::HMDDevice::EnterStandby()
 
 void* OculusToSteamVR::HMDDevice::GetComponent(const char* pchComponentNameAndVersion)
 {
-    if (!_stricmp(pchComponentNameAndVersion, vr::IVRDisplayComponent_Version)) {
+    if (!_stricmp(pchComponentNameAndVersion, vr::IVRDisplayComponent_Version))
+    {
         return static_cast<vr::IVRDisplayComponent*>(this);
     }
     return nullptr;
@@ -194,12 +197,8 @@ void OculusToSteamVR::HMDDevice::GetEyeOutputViewport(vr::EVREye eEye, uint32_t*
     *pnWidth = this->window_width_ / 2;
     *pnHeight = this->window_height_;
 
-    if (eEye == vr::EVREye::Eye_Left) {
-        *pnX = 0;
-    }
-    else {
-        *pnX = this->window_width_ / 2;
-    }
+    if (eEye == vr::EVREye::Eye_Left) *pnX = 0;
+    else *pnX = this->window_width_ / 2;
 }
 
 void OculusToSteamVR::HMDDevice::GetProjectionRaw(vr::EVREye eEye, float* pfLeft, float* pfRight, float* pfTop, float* pfBottom)

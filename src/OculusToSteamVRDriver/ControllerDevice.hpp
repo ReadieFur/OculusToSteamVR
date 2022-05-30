@@ -8,11 +8,13 @@
 #include <IVRDevice.hpp>
 #include <DriverFactory.hpp>
 
-namespace OculusToSteamVR {
-    class ControllerDevice : public IVRDevice {
+namespace OculusToSteamVR
+{
+    class ControllerDevice : public IVRDevice
+    {
         public:
-
-            enum class Handedness {
+            enum class Handedness
+            {
                 LEFT,
                 RIGHT,
                 ANY
@@ -21,7 +23,7 @@ namespace OculusToSteamVR {
             ControllerDevice(std::string serial, Handedness handedness = Handedness::ANY);
             ~ControllerDevice() = default;
 
-            // Inherited via IVRDevice
+            //Inherited via IVRDevice.
             virtual std::string GetSerial() override;
             virtual void Update() override;
             virtual vr::TrackedDeviceIndex_t GetDeviceIndex() override;

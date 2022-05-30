@@ -8,14 +8,16 @@
 #include <IVRDevice.hpp>
 #include <DriverFactory.hpp>
 
-namespace OculusToSteamVR {
-    class TrackerDevice : public IVRDevice {
+namespace OculusToSteamVR
+{
+    class TrackerDevice : public IVRDevice
+    {
         public:
 
             TrackerDevice(std::string serial);
             ~TrackerDevice() = default;
 
-            // Inherited via IVRDevice
+            //Inherited via IVRDevice.
             virtual std::string GetSerial() override;
             virtual void Update() override;
             virtual vr::TrackedDeviceIndex_t GetDeviceIndex() override;
@@ -41,6 +43,5 @@ namespace OculusToSteamVR {
 
         vr::VRInputComponentHandle_t system_click_component_ = 0;
         vr::VRInputComponentHandle_t system_touch_component_ = 0;
-
     };
 };

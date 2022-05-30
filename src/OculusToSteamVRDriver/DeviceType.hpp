@@ -1,5 +1,6 @@
 #pragma once
-enum class DeviceType {
+enum class DeviceType
+{
     HMD,
     CONTROLLER,
     TRACKER,

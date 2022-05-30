@@ -6,9 +6,12 @@
 
 static std::shared_ptr<OculusToSteamVR::IVRDriver> driver;
 
-void* HmdDriverFactory(const char* interface_name, int* return_code) {
-	if (std::strcmp(interface_name, vr::IServerTrackedDeviceProvider_Version) == 0) {
-		if (!driver) {
+void* HmdDriverFactory(const char* interface_name, int* return_code)
+{
+	if (std::strcmp(interface_name, vr::IServerTrackedDeviceProvider_Version) == 0)
+	{
+		if (!driver)
+		{
 			// Instantiate concrete impl
 			driver = std::make_shared<OculusToSteamVR::VRDriver>();
 		}
@@ -22,6 +25,7 @@ void* HmdDriverFactory(const char* interface_name, int* return_code) {
 	return nullptr;
 }
 
-std::shared_ptr<OculusToSteamVR::IVRDriver> OculusToSteamVR::GetDriver() {
+std::shared_ptr<OculusToSteamVR::IVRDriver> OculusToSteamVR::GetDriver()
+{
 	return driver;
 }

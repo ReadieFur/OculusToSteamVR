@@ -19,21 +19,23 @@ void OculusToSteamVR::ControllerDevice::Update()
 
     // Check if this device was asked to be identified
     auto events = GetDriver()->GetOpenVREvents();
-    for (auto event : events) {
+    for (auto event : events)
+    {
         // Note here, event.trackedDeviceIndex does not necissarily equal this->device_index_, not sure why, but the component handle will match so we can just use that instead
         //if (event.trackedDeviceIndex == this->device_index_) {
-        if (event.eventType == vr::EVREventType::VREvent_Input_HapticVibration) {
-            if (event.data.hapticVibration.componentHandle == this->haptic_component_) {
-                this->did_vibrate_ = true;
-            }
+        if (event.eventType == vr::EVREventType::VREvent_Input_HapticVibration)
+        {
+            if (event.data.hapticVibration.componentHandle == this->haptic_component_) this->did_vibrate_ = true;
         }
         //}
     }
 
     // Check if we need to keep vibrating
-    if (this->did_vibrate_) {
+    if (this->did_vibrate_)
+    {
         this->vibrate_anim_state_ += (GetDriver()->GetLastFrameTime().count()/1000.f);
-        if (this->vibrate_anim_state_ > 1.0f) {
+        if (this->vibrate_anim_state_ > 1.0f)
+        {
             this->did_vibrate_ = false;
             this->vibrate_anim_state_ = 0.0f;
         }
@@ -45,7 +47,8 @@ void OculusToSteamVR::ControllerDevice::Update()
     // Find a HMD
     auto devices = GetDriver()->GetDevices();
     auto hmd = std::find_if(devices.begin(), devices.end(), [](const std::shared_ptr<IVRDevice>& device_ptr) {return device_ptr->GetDeviceType() == DeviceType::HMD; });
-    if (hmd != devices.end()) {
+    if (hmd != devices.end())
+    {
         // Found a HMD
         vr::DriverPose_t hmd_pose = (*hmd)->GetPose();
 
@@ -77,11 +80,13 @@ void OculusToSteamVR::ControllerDevice::Update()
 
     // Check if we need to press any buttons (I am only hooking up the A button here but the process is the same for the others)
     // You will still need to go into the games button bindings and hook up each one (ie. a to left click, b to right click, etc.) for them to work properly
-    if (GetAsyncKeyState(0x45 /* E */) != 0) {
+    if (GetAsyncKeyState(0x45 /* E */) != 0)
+    {
         GetDriver()->GetInput()->UpdateBooleanComponent(this->a_button_click_component_, true, 0);
         GetDriver()->GetInput()->UpdateBooleanComponent(this->a_button_touch_component_, true, 0);
     }
-    else {
+    else
+    {
         GetDriver()->GetInput()->UpdateBooleanComponent(this->a_button_click_component_, false, 0);
         GetDriver()->GetInput()->UpdateBooleanComponent(this->a_button_touch_component_, false, 0);
     }
@@ -155,15 +160,12 @@ vr::EVRInitError OculusToSteamVR::ControllerDevice::Activate(uint32_t unObjectId
     GetDriver()->GetProperties()->SetStringProperty(props, vr::Prop_RenderModelName_String, "{oculus_to_steamvr}example_controller");
 
     // Give SteamVR a hint at what hand this controller is for
-    if (this->handedness_ == Handedness::LEFT) {
+    if (this->handedness_ == Handedness::LEFT)
         GetDriver()->GetProperties()->SetInt32Property(props, vr::Prop_ControllerRoleHint_Int32, vr::ETrackedControllerRole::TrackedControllerRole_LeftHand);
-    }
-    else if (this->handedness_ == Handedness::RIGHT) {
+    else if (this->handedness_ == Handedness::RIGHT)
         GetDriver()->GetProperties()->SetInt32Property(props, vr::Prop_ControllerRoleHint_Int32, vr::ETrackedControllerRole::TrackedControllerRole_RightHand);
-    }
-    else {
+    else
         GetDriver()->GetProperties()->SetInt32Property(props, vr::Prop_ControllerRoleHint_Int32, vr::ETrackedControllerRole::TrackedControllerRole_OptOut);
-    }
 
     // Set controller profile
     GetDriver()->GetProperties()->SetStringProperty(props, vr::Prop_InputProfilePath_String, "{oculus_to_steamvr}/input/example_controller_bindings.json");

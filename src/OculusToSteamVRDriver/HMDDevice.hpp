@@ -8,13 +8,15 @@
 #include <IVRDevice.hpp>
 #include <DriverFactory.hpp>
 
-namespace OculusToSteamVR {
-    class HMDDevice : public IVRDevice, public vr::IVRDisplayComponent {
+namespace OculusToSteamVR
+{
+    class HMDDevice : public IVRDevice, public vr::IVRDisplayComponent
+    {
         public:
             HMDDevice(std::string serial);
             ~HMDDevice() = default;
 
-            // Inherited via IVRDevice
+            //Inherited via IVRDevice.
             virtual std::string GetSerial() override;
             virtual void Update() override;
             virtual vr::TrackedDeviceIndex_t GetDeviceIndex() override;
@@ -27,7 +29,7 @@ namespace OculusToSteamVR {
             virtual void DebugRequest(const char* pchRequest, char* pchResponseBuffer, uint32_t unResponseBufferSize) override;
             virtual vr::DriverPose_t GetPose() override;
 
-            // Inherited via IVRDisplayComponent
+            //Inherited via IVRDisplayComponent.
             virtual void GetWindowBounds(int32_t* pnX, int32_t* pnY, uint32_t* pnWidth, uint32_t* pnHeight) override;
             virtual bool IsDisplayOnDesktop() override;
             virtual bool IsDisplayRealDisplay() override;

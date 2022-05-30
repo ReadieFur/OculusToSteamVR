@@ -8,14 +8,16 @@
 #include <IVRDevice.hpp>
 #include <DriverFactory.hpp>
 
-namespace OculusToSteamVR {
-    class TrackingReferenceDevice : public IVRDevice {
+namespace OculusToSteamVR
+{
+    class TrackingReferenceDevice : public IVRDevice
+    {
         public:
 
             TrackingReferenceDevice(std::string serial);
             ~TrackingReferenceDevice() = default;
 
-            // Inherited via IVRDevice
+            //Inherited via IVRDevice.
             virtual std::string GetSerial() override;
             virtual void Update() override;
             virtual vr::TrackedDeviceIndex_t GetDeviceIndex() override;
@@ -35,6 +37,5 @@ namespace OculusToSteamVR {
         vr::DriverPose_t last_pose_ = IVRDevice::MakeDefaultPose();
 
         float random_angle_rad_;
-
     };
 };

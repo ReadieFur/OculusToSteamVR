@@ -19,7 +19,6 @@ void OculusToSteamVR::TrackingReferenceDevice::Update()
     if (this->device_index_ == vr::k_unTrackedDeviceIndexInvalid)
         return;
 
-
     // Setup pose for this frame
     auto pose = IVRDevice::MakeDefaultPose();
 

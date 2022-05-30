@@ -9,6 +9,7 @@
 
 extern "C" __declspec(dllexport) void* HmdDriverFactory(const char* interface_name, int* return_code);
 
-namespace OculusToSteamVR {
+namespace OculusToSteamVR
+{
     std::shared_ptr<OculusToSteamVR::IVRDriver> GetDriver();
 }
