@@ -93,17 +93,8 @@ void VRLoop(ovrSession oSession/*, HANDLE sharedMutex*/, SharedData* sharedBuffe
 	for (int i = 0; i < 2; i++)
 	{
 		ovrInputState oInputState;
-		ovrResult oResult;
-
-		//TODO.
-		if (i == 1)
-		{
-			oResult = ovr_GetInputState(oSession, ovrControllerType::ovrControllerType_RTouch, &oInputState);
-		}
-		else
-		{
-			oResult = ovr_GetInputState(oSession, ovrControllerType::ovrControllerType_LTouch, &oInputState);
-		}
+		ovrResult oResult = ovr_GetInputState(oSession, i == ovrHand_Left ?
+			ovrControllerType::ovrControllerType_LTouch : ovrControllerType::ovrControllerType_RTouch, &oInputState);
 
 #pragma region Offsets
 		//https://github.com/mm0zct/Oculus_Touch_Steam_Link/blob/main/CustomHMD/OculusTouchLink.cpp#L872
