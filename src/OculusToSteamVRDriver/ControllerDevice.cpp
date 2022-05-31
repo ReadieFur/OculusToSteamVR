@@ -48,32 +48,43 @@ void OculusToSteamVR::ControllerDevice::Update(SharedData* sharedBuffer)
     newPose.poseIsValid = true;
     newPose.result = vr::ETrackingResult::TrackingResult_Running_OK;
 
-    ovrPosef pose = sharedBuffer->oTrackingState.HandPoses[oHandType_].ThePose;
+    ovrPoseStatef pose = sharedBuffer->oTrackingState.HandPoses[oHandType_];
+    unsigned int flags = sharedBuffer->oTrackingState.HandStatusFlags[oHandType_];
+
     //Position.
-    if (sharedBuffer->oTrackingState.HandStatusFlags[oHandType_] & ovrStatus_PositionTracked)
-    {
-        newPose.vecPosition[0] = pose.Position.x;
-        newPose.vecPosition[1] = pose.Position.y;
-        newPose.vecPosition[2] = pose.Position.z;
-    }
-    else
+    newPose.vecPosition[0] = pose.ThePose.Position.x;
+    newPose.vecPosition[1] = pose.ThePose.Position.y;
+    newPose.vecPosition[2] = pose.ThePose.Position.z;
+    if (!(flags & ovrStatus_PositionTracked))
     {
         newPose.poseIsValid = false;
         newPose.result = vr::ETrackingResult::TrackingResult_Fallback_RotationOnly;
     }
+
     //Rotation.
-    if (sharedBuffer->oTrackingState.HandStatusFlags[oHandType_] & ovrStatus_OrientationTracked)
-    {
-        newPose.qRotation.w = pose.Orientation.w;
-        newPose.qRotation.x = pose.Orientation.x;
-        newPose.qRotation.y = pose.Orientation.y;
-        newPose.qRotation.z = pose.Orientation.z;
-    }
-    else
+    newPose.qRotation.w = pose.ThePose.Orientation.w;
+    newPose.qRotation.x = pose.ThePose.Orientation.x;
+    newPose.qRotation.y = pose.ThePose.Orientation.y;
+    newPose.qRotation.z = pose.ThePose.Orientation.z;
+    if (!(flags & ovrStatus_OrientationTracked))
     {
         newPose.poseIsValid = false;
-        if (sharedBuffer->oTrackingState.HandStatusFlags[oHandType_] & ovrStatus_PositionTracked) newPose.result = vr::ETrackingResult::TrackingResult_Running_OutOfRange;
+        if (flags & ovrStatus_PositionTracked) newPose.result = vr::ETrackingResult::TrackingResult_Running_OutOfRange;
     }
+
+    //Misc.
+    newPose.vecVelocity[0] = pose.LinearVelocity.x;
+    newPose.vecVelocity[1] = pose.LinearVelocity.y;
+    newPose.vecVelocity[2] = pose.LinearVelocity.z;
+    newPose.vecAcceleration[0] = pose.LinearAcceleration.x;
+    newPose.vecAcceleration[1] = pose.LinearAcceleration.y;
+    newPose.vecAcceleration[2] = pose.LinearAcceleration.z;
+    newPose.vecAngularAcceleration[0] = pose.AngularAcceleration.x;
+    newPose.vecAngularAcceleration[1] = pose.AngularAcceleration.y;
+    newPose.vecAngularAcceleration[2] = pose.AngularAcceleration.z;
+    newPose.vecAngularVelocity[0] = pose.AngularVelocity.x;
+    newPose.vecAngularVelocity[1] = pose.AngularVelocity.y;
+    newPose.vecAngularVelocity[2] = pose.AngularVelocity.z;
 
     //Inputs.
     ovrInputState oInputState = sharedBuffer->oInputState[oHandType_];

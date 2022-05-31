@@ -14,7 +14,6 @@ namespace OculusToSteamVR
     class TrackerDevice : public IVRDevice
     {
         public:
-
             TrackerDevice(std::string serial, OculusDeviceType oculusDeviceType);
             ~TrackerDevice() = default;
 
