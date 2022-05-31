@@ -46,8 +46,6 @@ void OculusToSteamVR::TrackerDevice::Update(SharedData* sharedBuffer)
     auto newPose = this->last_pose_;
     newPose.poseIsValid = true;
     newPose.result = vr::ETrackingResult::TrackingResult_Running_OK;
-    newPose.qDriverFromHeadRotation = { 1, 0, 0, 0 };
-    newPose.qWorldFromDriverRotation = { 1, 0, 0, 0 };
 
     ovrPoseStatef pose;
     unsigned int flags;
@@ -109,6 +107,9 @@ void OculusToSteamVR::TrackerDevice::Update(SharedData* sharedBuffer)
     newPose.vecAngularVelocity[0] = pose.AngularVelocity.x;
     newPose.vecAngularVelocity[1] = pose.AngularVelocity.y;
     newPose.vecAngularVelocity[2] = pose.AngularVelocity.z;
+    newPose.qDriverFromHeadRotation = { 1, 0, 0, 0 };
+    newPose.qWorldFromDriverRotation = { 1, 0, 0, 0 };
+    newPose.poseTimeOffset = 0;
 
     // Post pose
     GetDriver()->GetDriverHost()->TrackedDevicePoseUpdated(this->device_index_, newPose, sizeof(vr::DriverPose_t));

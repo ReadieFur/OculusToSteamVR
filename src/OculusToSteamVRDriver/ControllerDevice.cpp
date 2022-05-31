@@ -51,10 +51,24 @@ void OculusToSteamVR::ControllerDevice::Update(SharedData* sharedBuffer)
     ovrPoseStatef pose = sharedBuffer->oTrackingState.HandPoses[oHandType_];
     unsigned int flags = sharedBuffer->oTrackingState.HandStatusFlags[oHandType_];
 
+#pragma region Offsets
+    ovrQuatf inputOrientation = sharedBuffer->oTrackingState.HandPoses[oHandType_].ThePose.Orientation;
+    ovrQuatf correctedOrientation = Helpers::OVRQuatFMul(inputOrientation, quatOffsets);
+    ovrVector3f vectorOffsets = { 0,0,0 };
+    //Apply left or right offset.
+    if (oHandType_ == ovrHand_Right) vectorOffsets = Helpers::RotateVector2(rightVectorOffsets, inputOrientation);
+    else
+    {
+        ovrVector3f leftVectorOffset = rightVectorOffsets;
+        leftVectorOffset.x = -leftVectorOffset.x;
+        vectorOffsets = Helpers::RotateVector2(leftVectorOffset, inputOrientation);
+    }
+#pragma endregion
+
     //Position.
-    newPose.vecPosition[0] = pose.ThePose.Position.x;
-    newPose.vecPosition[1] = pose.ThePose.Position.y;
-    newPose.vecPosition[2] = pose.ThePose.Position.z;
+    newPose.vecPosition[0] = pose.ThePose.Position.x + vectorOffsets.x;
+    newPose.vecPosition[1] = pose.ThePose.Position.y + vectorOffsets.y;
+    newPose.vecPosition[2] = pose.ThePose.Position.z + vectorOffsets.z;
     if (!(flags & ovrStatus_PositionTracked))
     {
         newPose.poseIsValid = false;
@@ -62,10 +76,10 @@ void OculusToSteamVR::ControllerDevice::Update(SharedData* sharedBuffer)
     }
 
     //Rotation.
-    newPose.qRotation.w = pose.ThePose.Orientation.w;
-    newPose.qRotation.x = pose.ThePose.Orientation.x;
-    newPose.qRotation.y = pose.ThePose.Orientation.y;
-    newPose.qRotation.z = pose.ThePose.Orientation.z;
+    newPose.qRotation.w = correctedOrientation.w;
+    newPose.qRotation.x = correctedOrientation.x;
+    newPose.qRotation.y = correctedOrientation.y;
+    newPose.qRotation.z = correctedOrientation.z;
     if (!(flags & ovrStatus_OrientationTracked))
     {
         newPose.poseIsValid = false;
@@ -85,6 +99,9 @@ void OculusToSteamVR::ControllerDevice::Update(SharedData* sharedBuffer)
     newPose.vecAngularVelocity[0] = pose.AngularVelocity.x;
     newPose.vecAngularVelocity[1] = pose.AngularVelocity.y;
     newPose.vecAngularVelocity[2] = pose.AngularVelocity.z;
+    newPose.qDriverFromHeadRotation = { 1, 0, 0, 0 };
+    newPose.qWorldFromDriverRotation = { 1, 0, 0, 0 };
+    newPose.poseTimeOffset = 0;
 
     //Inputs.
     ovrInputState oInputState = sharedBuffer->oInputState[oHandType_];

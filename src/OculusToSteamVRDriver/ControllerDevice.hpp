@@ -8,6 +8,8 @@
 #include <IVRDevice.hpp>
 #include <DriverFactory.hpp>
 
+#include <Helpers.hpp>
+
 namespace OculusToSteamVR
 {
     class ControllerDevice : public IVRDevice
@@ -37,6 +39,11 @@ namespace OculusToSteamVR
             virtual vr::DriverPose_t GetPose() override;
 
     private:
+        //https://github.com/mm0zct/Oculus_Touch_Steam_Link/blob/main/CustomHMD/OculusTouchLink.cpp#L872
+        const ovrQuatf quatOffsets = { 0.3420201, 0, 0, 0.9396926 };
+        const ovrVector3f rightVectorOffsets = { 0.00571, 0.04078, -0.03531 };
+        const ovrVector3f vectorOffsets2 = { -0.000999998, -0.1, 0.0019 };
+
         vr::TrackedDeviceIndex_t device_index_ = vr::k_unTrackedDeviceIndexInvalid;
         std::string serial_;
         Handedness handedness_;
