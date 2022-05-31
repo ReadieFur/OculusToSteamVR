@@ -15,11 +15,14 @@
 
 #define RUN_INTERVAL 90 //Set to 90 becuase that is the max update rate of the Oculus sensors.
 
+inline bool ShouldLog(int frameCount)
+{
 #if TRUE
-#define SHOULD_LOG(frameCount) (frameCount % (RUN_INTERVAL * 5) == 0) //Slower but I'm using this because I don't understand the & (Log every 5s).
+	return frameCount % (RUN_INTERVAL * 5) == 0;  //Slower but I'm using this because I don't understand the & (Log every 5s).
 #else
-#define SHOULD_LOG(frameCount) (frameCount & 0x7FF)
+	return frameCount & 0x7FF;
 #endif
+}
 
 struct SharedData
 {
@@ -37,7 +40,7 @@ void VRLoop(ovrSession oSession/*, HANDLE sharedMutex*/, SharedData* sharedBuffe
 
 	//WaitForSingleObject(sharedMutex, INFINITE);
 
-	bool shouldLog = SHOULD_LOG(frameCount);
+	bool shouldLog = ShouldLog(frameCount);
 	double frameTime = ovr_GetPredictedDisplayTime(oSession, frameCount);
 
 	oTrackingState = ovr_GetTrackingState(oSession, frameTime, ovrTrue);
