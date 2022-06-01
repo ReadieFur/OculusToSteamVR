@@ -13,7 +13,7 @@ std::string OculusToSteamVR::ControllerDevice::GetSerial()
     return this->serial_;
 }
 
-void OculusToSteamVR::ControllerDevice::Update(SharedData* sharedBuffer)
+void OculusToSteamVR::ControllerDevice::Update(SharedData sharedBuffer)
 {
     if (this->device_index_ == vr::k_unTrackedDeviceIndexInvalid)
         return;
@@ -48,11 +48,11 @@ void OculusToSteamVR::ControllerDevice::Update(SharedData* sharedBuffer)
     newPose.poseIsValid = true;
     newPose.result = vr::ETrackingResult::TrackingResult_Running_OK;
 
-    ovrPoseStatef pose = sharedBuffer->oTrackingState.HandPoses[oHandType_];
-    unsigned int flags = sharedBuffer->oTrackingState.HandStatusFlags[oHandType_];
+    ovrPoseStatef pose = sharedBuffer.oTrackingState.HandPoses[oHandType_];
+    unsigned int flags = sharedBuffer.oTrackingState.HandStatusFlags[oHandType_];
 
 #pragma region Offsets
-    ovrQuatf inputOrientation = sharedBuffer->oTrackingState.HandPoses[oHandType_].ThePose.Orientation;
+    ovrQuatf inputOrientation = sharedBuffer.oTrackingState.HandPoses[oHandType_].ThePose.Orientation;
     ovrQuatf correctedOrientation = Helpers::OVRQuatFMul(inputOrientation, quatOffsets);
     ovrVector3f vectorOffsets = { 0,0,0 };
     //Apply left or right offset.
@@ -104,7 +104,7 @@ void OculusToSteamVR::ControllerDevice::Update(SharedData* sharedBuffer)
     newPose.poseTimeOffset = 0;
 
     //Inputs.
-    ovrInputState oInputState = sharedBuffer->oInputState[oHandType_];
+    ovrInputState oInputState = sharedBuffer.oInputState[oHandType_];
     if (this->handedness_ == Handedness::LEFT)
     {
         GetDriver()->GetInput()->UpdateBooleanComponent(this->x_button_click_component_, oInputState.Buttons & ovrButton_X, 0);
@@ -192,7 +192,7 @@ vr::EVRInitError OculusToSteamVR::ControllerDevice::Activate(uint32_t unObjectId
     GetDriver()->GetInput()->CreateScalarComponent(props, "/input/joystick/y", &this->joystick_y_component_, vr::EVRScalarType::VRScalarType_Absolute, vr::EVRScalarUnits::VRScalarUnits_NormalizedTwoSided);
 
     //Set some universe ID (Must be 2 or higher).
-    GetDriver()->GetProperties()->SetUint64Property(props, vr::Prop_CurrentUniverseId_Uint64, 4);
+    GetDriver()->GetProperties()->SetUint64Property(props, vr::Prop_CurrentUniverseId_Uint64, 31);
 
     //Set up a model "number" (not needed but good to have).
     GetDriver()->GetProperties()->SetStringProperty(props, vr::Prop_ModelNumber_String, "oculus_touch");
@@ -224,7 +224,7 @@ vr::EVRInitError OculusToSteamVR::ControllerDevice::Activate(uint32_t unObjectId
     GetDriver()->GetProperties()->SetStringProperty(props, vr::Prop_NamedIconPathDeviceStandby_String, ("{oculus}/icons/cv1_" + handString + "_controller_off.png").c_str());
     GetDriver()->GetProperties()->SetStringProperty(props, vr::Prop_NamedIconPathDeviceAlertLow_String, ("{oculus}/icons/cv1_" + handString + "_controller_ready_low.png").c_str());
 
-    vr::VRProperties()->SetStringProperty(props, vr::Prop_TrackingSystemName_String, "lighthouse");
+    vr::VRProperties()->SetStringProperty(props, vr::Prop_TrackingSystemName_String, "oculus");
 
     return vr::EVRInitError::VRInitError_None;
 }

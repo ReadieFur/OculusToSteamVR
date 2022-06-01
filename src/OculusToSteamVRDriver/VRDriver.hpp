@@ -43,6 +43,7 @@ namespace OculusToSteamVR
         std::chrono::system_clock::time_point last_frame_time_ = std::chrono::system_clock::now();
         std::string settings_key_ = "driver_oculus_to_steamvr";
         SharedData* sharedBuffer;
+        HANDLE sharedMutex;
         
         virtual vr::EVRInitError InitSharedData();
     };

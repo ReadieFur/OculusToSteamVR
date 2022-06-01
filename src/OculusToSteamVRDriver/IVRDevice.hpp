@@ -20,7 +20,7 @@ namespace OculusToSteamVR
         /// Runs any update logic for this device.
         /// Called once per frame
         /// </summary>
-        virtual void Update(SharedData* sharedBuffer) = 0;
+        virtual void Update(SharedData data) = 0;
 
         /// <summary>
         /// Returns the OpenVR device index

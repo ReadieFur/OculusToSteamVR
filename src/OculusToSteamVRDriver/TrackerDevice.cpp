@@ -51,24 +51,24 @@ void OculusToSteamVR::TrackerDevice::Update(SharedData* sharedBuffer)
     unsigned int flags;
     if (oculus_device_type_ == HMD)
     {
-        pose = sharedBuffer->oTrackingState.HeadPose;
-        flags = sharedBuffer->oTrackingState.StatusFlags;
+        pose = sharedBuffer.oTrackingState.HeadPose;
+        flags = sharedBuffer.oTrackingState.StatusFlags;
     }
     else if (oculus_device_type_ == Controller_Left)
     {
-        pose = sharedBuffer->oTrackingState.HandPoses[ovrHandType::ovrHand_Left];
-        flags = sharedBuffer->oTrackingState.HandStatusFlags[ovrHandType::ovrHand_Left];
+        pose = sharedBuffer.oTrackingState.HandPoses[ovrHandType::ovrHand_Left];
+        flags = sharedBuffer.oTrackingState.HandStatusFlags[ovrHandType::ovrHand_Left];
     }
     else if (oculus_device_type_ == Controller_Right)
     {
-        pose = sharedBuffer->oTrackingState.HandPoses[ovrHandType::ovrHand_Right];
-        flags = sharedBuffer->oTrackingState.HandStatusFlags[ovrHandType::ovrHand_Right];
+        pose = sharedBuffer.oTrackingState.HandPoses[ovrHandType::ovrHand_Right];
+        flags = sharedBuffer.oTrackingState.HandStatusFlags[ovrHandType::ovrHand_Right];
     }
     else if (oculus_device_type_ == Object)
     {
         int index = atoi(this->serial_.substr(13).c_str()); //13 -> "oculus_object"
-        if (sharedBuffer->vrObjectsPose.find(index) == sharedBuffer->vrObjectsPose.end()) return;
-        pose = sharedBuffer->vrObjectsPose[index];
+        if (index > sharedBuffer.vrObjects.size()) return;
+        pose = sharedBuffer.vrObjects[index];
         flags = ovrStatusBits_::ovrStatus_PositionValid | ovrStatusBits_::ovrStatus_OrientationValid;
     }
     else return;
@@ -95,7 +95,7 @@ void OculusToSteamVR::TrackerDevice::Update(SharedData* sharedBuffer)
     }
 
     //Misc.
-    newPose.vecVelocity[0] = pose.LinearVelocity.x;
+    /*newPose.vecVelocity[0] = pose.LinearVelocity.x;
     newPose.vecVelocity[1] = pose.LinearVelocity.y;
     newPose.vecVelocity[2] = pose.LinearVelocity.z;
     newPose.vecAcceleration[0] = pose.LinearAcceleration.x;
@@ -106,7 +106,7 @@ void OculusToSteamVR::TrackerDevice::Update(SharedData* sharedBuffer)
     newPose.vecAngularAcceleration[2] = pose.AngularAcceleration.z;
     newPose.vecAngularVelocity[0] = pose.AngularVelocity.x;
     newPose.vecAngularVelocity[1] = pose.AngularVelocity.y;
-    newPose.vecAngularVelocity[2] = pose.AngularVelocity.z;
+    newPose.vecAngularVelocity[2] = pose.AngularVelocity.z;*/
     newPose.qDriverFromHeadRotation = { 1, 0, 0, 0 };
     newPose.qWorldFromDriverRotation = { 1, 0, 0, 0 };
     newPose.poseTimeOffset = 0;
@@ -136,7 +136,7 @@ vr::EVRInitError OculusToSteamVR::TrackerDevice::Activate(uint32_t unObjectId)
     auto props = GetDriver()->GetProperties()->TrackedDeviceToPropertyContainer(this->device_index_);
 
     //Set some universe ID (Must be 2 or higher).
-    GetDriver()->GetProperties()->SetUint64Property(props, vr::Prop_CurrentUniverseId_Uint64, 4);
+    GetDriver()->GetProperties()->SetUint64Property(props, vr::Prop_CurrentUniverseId_Uint64, 31);
 
     // Set up a model "number" (not needed but good to have)
     GetDriver()->GetProperties()->SetStringProperty(props, vr::Prop_ModelNumber_String, "Vive Tracker Pro MV");
@@ -163,7 +163,7 @@ vr::EVRInitError OculusToSteamVR::TrackerDevice::Activate(uint32_t unObjectId)
     GetDriver()->GetProperties()->SetStringProperty(props, vr::Prop_NamedIconPathDeviceAlertLow_String, "{htc}/icons/tracker_status_ready_low.png");
 
     //https://github.com/SDraw/driver_kinectV2/blob/5931c33c41b726765cca84c0bbffb3a3f86efde8/driver_kinectV2/CTrackerVive.cpp
-    vr::VRProperties()->SetStringProperty(props, vr::Prop_TrackingSystemName_String, "lighthouse");
+    vr::VRProperties()->SetStringProperty(props, vr::Prop_TrackingSystemName_String, "oculus");
     vr::VRProperties()->SetStringProperty(props, vr::Prop_SerialNumber_String, (std::string("LHR-CB0CD0"/*0"*/) + std::to_string(unObjectId)).c_str());
     vr::VRProperties()->SetStringProperty(props, vr::Prop_ManufacturerName_String, "HTC");
     vr::VRProperties()->SetStringProperty(props, vr::Prop_ResourceRoot_String, "htc");

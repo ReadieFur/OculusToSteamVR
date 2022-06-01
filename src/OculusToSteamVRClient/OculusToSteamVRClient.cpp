@@ -4,7 +4,7 @@
 #include <thread>
 #include <chrono>
 #include <OVR_CAPI.h>
-#include <map>
+#include <vector>
 
 /*Exit codes:
 * 0 Ok.
@@ -15,6 +15,18 @@
 
 #define RUN_INTERVAL 90 //Set to 90 becuase that is the max update rate of the Oculus sensors.
 
+struct SharedData
+{
+	HANDLE clientHandle; //Use with: WaitForSingleObject(clientHandle, 0) == STATUS_TIMEOUT. If true then the process is still active.
+	//std::string logBuffer; //Broken.
+	ovrTrackingState oTrackingState;
+	ovrInputState oInputState[2];
+	unsigned int vrObjectsCount;
+	std::vector<ovrPoseStatef> vrObjects;
+	unsigned int trackingRefrencesCount;
+	std::vector<ovrTrackerPose> trackingRefrences;
+};
+
 inline bool ShouldLog(int frameCount)
 {
 #if TRUE
@@ -24,21 +36,13 @@ inline bool ShouldLog(int frameCount)
 #endif
 }
 
-struct SharedData
-{
-	ovrTrackingState oTrackingState;
-	ovrInputState oInputState[2];
-	unsigned int vrObjectsCount;
-	std::map<int, ovrPoseStatef> vrObjectsPose;
-};
-
-void VRLoop(ovrSession oSession/*, HANDLE sharedMutex*/, SharedData* sharedBuffer, uint64_t frameCount,
+void VRLoop(ovrSession oSession, HANDLE sharedMutex, SharedData* sharedBuffer, uint64_t frameCount,
 	ovrHapticsBuffer& oHapticsBuffer, uint8_t* hapticsBuffer, unsigned int hapticsBufferSize)
 {
 	ovrTrackingState oTrackingState = ovr_GetTrackingState(oSession, 0, false);
 	sharedBuffer->oTrackingState = oTrackingState;
 
-	//WaitForSingleObject(sharedMutex, INFINITE);
+	WaitForSingleObject(sharedMutex, INFINITE);
 
 	bool shouldLog = ShouldLog(frameCount);
 	double frameTime = ovr_GetPredictedDisplayTime(oSession, frameCount);
@@ -88,9 +92,8 @@ void VRLoop(ovrSession oSession/*, HANDLE sharedMutex*/, SharedData* sharedBuffe
 	{
 		ovrTrackedDeviceType deviceType = (ovrTrackedDeviceType)(ovrTrackedDevice_Object0 + i);
 		ovrPoseStatef oPose;
-
 		ovr_GetDevicePoses(oSession, &deviceType, 1, frameTime, &oPose);
-		sharedBuffer->vrObjectsPose[i] = oPose;
+		sharedBuffer->vrObjects[i] = oPose;
 
 		//Bit-shift? to display every ? frames. (I don't understand the bit shift so I don't know how often this runs).
 		if (shouldLog)
@@ -103,10 +106,15 @@ void VRLoop(ovrSession oSession/*, HANDLE sharedMutex*/, SharedData* sharedBuffe
 		}
 	}
 
+	//Sensors.
+	for (int i = 0; i < sharedBuffer->trackingRefrencesCount; i++) sharedBuffer->trackingRefrences[i] = ovr_GetTrackerPose(oSession, i);
+
 	if (shouldLog) std::cout << std::endl;
+
+	ReleaseMutex(sharedMutex);
 }
 
-int InitSharedData(HANDLE& hMapFile, SharedData*& sharedBuffer/*, HANDLE& sharedMutex*/)
+int InitSharedData(HANDLE& hMapFile, SharedData*& sharedBuffer, HANDLE& sharedMutex)
 {
 	bool didCreateMapping = false;
 
@@ -150,12 +158,6 @@ int InitSharedData(HANDLE& hMapFile, SharedData*& sharedBuffer/*, HANDLE& shared
 			0,
 			0,
 			sizeof(SharedData)))SharedData();
-
-		HANDLE sharedMutex = CreateMutexW(0, true, L"Local\\ovr_client_shared_mutex");
-		WaitForSingleObject(
-			sharedMutex, //Handle to mutex.
-			INFINITE); //No time-out interval.
-		ReleaseMutex(sharedMutex);
 	}
 
 	if (sharedBuffer == NULL)
@@ -164,6 +166,13 @@ int InitSharedData(HANDLE& hMapFile, SharedData*& sharedBuffer/*, HANDLE& shared
 		CloseHandle(hMapFile);
 		return 2;
 	}
+
+	sharedMutex = CreateMutexW(0, true, L"Local\\ovr_client_shared_mutex");
+	//No need to wait here.
+	/*WaitForSingleObject(
+		sharedMutex, //Handle to mutex.
+		INFINITE); //No time-out interval.
+	ReleaseMutex(sharedMutex);*/
 
 	return 0;
 }
@@ -180,9 +189,11 @@ int main()
 
 	HANDLE hMapFile;
 	SharedData* sharedBuffer;
-	//HANDLE sharedMutex;
-	int initSharedBufferResult = InitSharedData(hMapFile, sharedBuffer/*, sharedMutex*/);
+	HANDLE sharedMutex;
+	int initSharedBufferResult = InitSharedData(hMapFile, sharedBuffer, sharedMutex);
 	if (initSharedBufferResult != 0) return initSharedBufferResult;
+
+	sharedBuffer->clientHandle = GetCurrentProcess();
 
 	ovrResult oResult;
 	ovrErrorInfo oErrorInfo;
@@ -215,8 +226,10 @@ int main()
 	for (int i = 0; i < hapticsBufferSize; i++) hapticsBuffer[i] = 255;
 
 	//TODO: Make this dynamic as I believe the count here can change at any time.
-	unsigned int vrObjectsCount = (ovr_GetConnectedControllerTypes(oSession) >> 8) & 0xf;
-	sharedBuffer->vrObjectsCount = vrObjectsCount;
+	sharedBuffer->vrObjectsCount = (ovr_GetConnectedControllerTypes(oSession) >> 8) & 0xf;
+	sharedBuffer->vrObjects.resize(sharedBuffer->vrObjectsCount);
+	sharedBuffer->trackingRefrencesCount = ovr_GetTrackerCount(oSession);
+	sharedBuffer->trackingRefrences.resize(sharedBuffer->trackingRefrencesCount);
 
 	//Run up to x times per second.
 	//Add this inside the loop to allow for a dynamic rate synced with the SteamVR frame rate?
@@ -229,7 +242,7 @@ int main()
 		ovr_GetSessionStatus(oSession, &sessionStatus);
 		if (sessionStatus.ShouldQuit) break;
 
-		VRLoop(oSession/*, sharedMutex*/, sharedBuffer, frameCount, oHapticsBuffer, hapticsBuffer, hapticsBufferSize);
+		VRLoop(oSession, sharedMutex, sharedBuffer, frameCount, oHapticsBuffer, hapticsBuffer, hapticsBufferSize);
 
 		frameCount++;
 

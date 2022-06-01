@@ -52,12 +52,6 @@ vr::EVRInitError OculusToSteamVR::VRDriver::InitSharedData()
             0,
             0,
             sizeof(SharedData)))SharedData();
-
-        HANDLE sharedMutex = CreateMutexW(0, true, L"Local\\ovr_client_shared_mutex");
-        WaitForSingleObject(
-            sharedMutex, //Handle to mutex.
-            INFINITE); //No time-out interval.
-        ReleaseMutex(sharedMutex);
     }
 
     if (sharedBuffer == NULL)
@@ -66,6 +60,15 @@ vr::EVRInitError OculusToSteamVR::VRDriver::InitSharedData()
         CloseHandle(hMapFile);
         return vr::VRInitError_IPC_SharedStateInitFailed;
     }
+
+    sharedMutex = CreateMutexW(0, true, L"Local\\ovr_client_shared_mutex");
+    //No need to wait here.
+    /*if (WaitForSingleObject(sharedMutex, 1000) != WAIT_OBJECT_0)
+    {
+        Log("Could not lock mutex after specified interval " + GetLastError());
+        return vr::VRInitError_IPC_MutexInitFailed;
+    }
+    ReleaseMutex(sharedMutex);*/
 
     return vr::VRInitError_None;
 }
@@ -82,6 +85,10 @@ vr::EVRInitError OculusToSteamVR::VRDriver::Init(vr::IVRDriverContext* pDriverCo
     if (initSharedDataResult != vr::VRInitError_None) return initSharedDataResult;
 
     vr::EVRSettingsError settingsError;
+    //Add tracking refrences (sensors).
+    //sharedBuffer->logBuffer += std::to_string(sharedBuffer->trackingRefrencesCount);
+    //for (int i = 0; i < sharedBuffer->trackingRefrencesCount; i++) this->AddDevice(std::make_shared<TrackingReferenceDevice>("oculus_tracking_refrence" + std::to_string(i), i));
+
     //Add the hmd as a tracked device (if specified in the config).
     if (vr::VRSettings()->GetBool(settings_key_.c_str(), "track_hmd", &settingsError)) this->AddDevice(std::make_shared<TrackerDevice>("oculus_hmd", OculusDeviceType::HMD));
     if (settingsError == vr::VRSettingsError_UnsetSettingHasNoDefault) vr::VRSettings()->SetBool(settings_key_.c_str(), "track_hmd", false);
@@ -97,7 +104,7 @@ vr::EVRInitError OculusToSteamVR::VRDriver::Init(vr::IVRDriverContext* pDriverCo
     //Add any other tracked objects there may be.
     for (int i = 0; i < sharedBuffer->vrObjectsCount; i++) this->AddDevice(std::make_shared<TrackerDevice>("oculus_object" + std::to_string(i), OculusDeviceType::Object));
 
-    Log("OculusToSteamVR Loaded Successfully");
+    Log("OculusToSteamVR Loaded Successfully.");
 
 	return vr::VRInitError_None;
 }
@@ -120,8 +127,13 @@ void OculusToSteamVR::VRDriver::RunFrame()
     this->frame_timing_ = std::chrono::duration_cast<std::chrono::milliseconds>(now - this->last_frame_time_);
     this->last_frame_time_ = now;
 
+    if (WaitForSingleObject(sharedMutex, 10) != WAIT_OBJECT_0) return; //Mutex lock timeout.
+    //Create a copy of the shared data to keep the locked time to a minimum.
+    SharedData data = *sharedBuffer;
+    ReleaseMutex(sharedMutex);
+
     //Update devices.
-    for (auto& device : this->devices_) device->Update(sharedBuffer);
+    for (auto& device : this->devices_) device->Update(data);
 }
 
 bool OculusToSteamVR::VRDriver::ShouldBlockStandbyMode()
