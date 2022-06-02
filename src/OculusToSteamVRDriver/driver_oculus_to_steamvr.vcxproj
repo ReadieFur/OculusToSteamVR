@@ -421,12 +421,13 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
     </CustomBuild>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Helpers.hpp" />
     <ClInclude Include="O:\GitHub\ReadieFur\OculusToSteamVR\src\OculusToSteamVRDriver\ControllerDevice.hpp" />
     <ClInclude Include="O:\GitHub\ReadieFur\OculusToSteamVR\src\OculusToSteamVRDriver\DeviceType.hpp" />
     <ClInclude Include="O:\GitHub\ReadieFur\OculusToSteamVR\src\OculusToSteamVRDriver\DriverFactory.hpp" />
+    <ClInclude Include="O:\GitHub\ReadieFur\OculusToSteamVR\src\OculusToSteamVRDriver\Helpers.hpp" />
     <ClInclude Include="O:\GitHub\ReadieFur\OculusToSteamVR\src\OculusToSteamVRDriver\IVRDevice.hpp" />
     <ClInclude Include="O:\GitHub\ReadieFur\OculusToSteamVR\src\OculusToSteamVRDriver\IVRDriver.hpp" />
+    <ClInclude Include="O:\GitHub\ReadieFur\OculusToSteamVR\src\OculusToSteamVRDriver\OculusDeviceType.hpp" />
     <ClInclude Include="O:\GitHub\ReadieFur\OculusToSteamVR\src\OculusToSteamVRDriver\TrackerDevice.hpp" />
     <ClInclude Include="O:\GitHub\ReadieFur\OculusToSteamVR\src\OculusToSteamVRDriver\TrackingReferenceDevice.hpp" />
     <ClInclude Include="O:\GitHub\ReadieFur\OculusToSteamVR\src\OculusToSteamVRDriver\VRDriver.hpp" />
@@ -436,7 +437,6 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
     <ClCompile Include="O:\GitHub\ReadieFur\OculusToSteamVR\src\OculusToSteamVRDriver\TrackerDevice.cpp" />
     <ClCompile Include="O:\GitHub\ReadieFur\OculusToSteamVR\src\OculusToSteamVRDriver\TrackingReferenceDevice.cpp" />
     <ClCompile Include="O:\GitHub\ReadieFur\OculusToSteamVR\src\OculusToSteamVRDriver\VRDriver.cpp" />
-    <ClInclude Include="OculusDeviceType.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="O:\GitHub\ReadieFur\OculusToSteamVR\src\OculusToSteamVRDriver\ZERO_CHECK.vcxproj">

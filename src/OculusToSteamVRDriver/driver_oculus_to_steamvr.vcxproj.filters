@@ -30,10 +30,16 @@
     <ClInclude Include="O:\GitHub\ReadieFur\OculusToSteamVR\src\OculusToSteamVRDriver\DriverFactory.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="O:\GitHub\ReadieFur\OculusToSteamVR\src\OculusToSteamVRDriver\Helpers.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="O:\GitHub\ReadieFur\OculusToSteamVR\src\OculusToSteamVRDriver\IVRDevice.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="O:\GitHub\ReadieFur\OculusToSteamVR\src\OculusToSteamVRDriver\IVRDriver.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="O:\GitHub\ReadieFur\OculusToSteamVR\src\OculusToSteamVRDriver\OculusDeviceType.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="O:\GitHub\ReadieFur\OculusToSteamVR\src\OculusToSteamVRDriver\TrackerDevice.hpp">
@@ -43,12 +49,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="O:\GitHub\ReadieFur\OculusToSteamVR\src\OculusToSteamVRDriver\VRDriver.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="OculusDeviceType.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Helpers.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
