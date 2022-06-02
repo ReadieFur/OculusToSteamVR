@@ -28,7 +28,7 @@ inline vr::HmdVector3d_t quaternionRotateVector(const vr::HmdQuaternion_t& quat,
     return { rotatedVectorQuat.x, rotatedVectorQuat.y, rotatedVectorQuat.z };
 }
 
-void OculusToSteamVR::TrackerDevice::Update(SharedData sharedBuffer)
+void OculusToSteamVR::TrackerDevice::Update(SharedData* sharedBuffer)
 {
     if (this->device_index_ == vr::k_unTrackedDeviceIndexInvalid)
         return;
@@ -67,24 +67,24 @@ void OculusToSteamVR::TrackerDevice::Update(SharedData sharedBuffer)
     unsigned int flags;
     if (oculus_device_type_ == HMD)
     {
-        pose = sharedBuffer.oTrackingState.HeadPose;
-        flags = sharedBuffer.oTrackingState.StatusFlags;
+        pose = sharedBuffer->oTrackingState.HeadPose;
+        flags = sharedBuffer->oTrackingState.StatusFlags;
     }
     else if (oculus_device_type_ == Controller_Left)
     {
-        pose = sharedBuffer.oTrackingState.HandPoses[ovrHandType::ovrHand_Left];
-        flags = sharedBuffer.oTrackingState.HandStatusFlags[ovrHandType::ovrHand_Left];
+        pose = sharedBuffer->oTrackingState.HandPoses[ovrHandType::ovrHand_Left];
+        flags = sharedBuffer->oTrackingState.HandStatusFlags[ovrHandType::ovrHand_Left];
     }
     else if (oculus_device_type_ == Controller_Right)
     {
-        pose = sharedBuffer.oTrackingState.HandPoses[ovrHandType::ovrHand_Right];
-        flags = sharedBuffer.oTrackingState.HandStatusFlags[ovrHandType::ovrHand_Right];
+        pose = sharedBuffer->oTrackingState.HandPoses[ovrHandType::ovrHand_Right];
+        flags = sharedBuffer->oTrackingState.HandStatusFlags[ovrHandType::ovrHand_Right];
     }
     else if (oculus_device_type_ == Object)
     {
         int index = atoi(this->serial_.substr(13).c_str()); //13 -> "oculus_object"
-        if (index > sharedBuffer.vrObjects.size()) return;
-        pose = sharedBuffer.vrObjects[index];
+        if (index > sharedBuffer->vrObjects.size()) return;
+        pose = sharedBuffer->vrObjects[index];
         flags = ovrStatusBits_::ovrStatus_PositionValid | ovrStatusBits_::ovrStatus_OrientationValid;
     }
     else return;
@@ -129,9 +129,9 @@ void OculusToSteamVR::TrackerDevice::Update(SharedData sharedBuffer)
 
     //https://github.com/pushrax/OpenVR-SpaceCalibrator/blob/master/OpenVR-SpaceCalibratorDriver/ServerTrackedDeviceProvider.cpp#L57
     //Static offset from testing.
-    /*vr::HmdVector3d_t offsetTranslation;
-    vr::HmdQuaternion_t offsetRotation;
-    double offsetScale;
+    /*vr::HmdVector3d_t offsetTranslation{-38, -0.7, 8.85};
+    vr::HmdQuaternion_t offsetRotation { -0.043, 0.998, 0.034, 0.010 };
+    double offsetScale = 1;
     newPose.vecPosition[0] *= offsetScale;
     newPose.vecPosition[1] *= offsetScale;
     newPose.vecPosition[2] *= offsetScale;
@@ -140,7 +140,7 @@ void OculusToSteamVR::TrackerDevice::Update(SharedData sharedBuffer)
     newPose.vecWorldFromDriverTranslation[1] = rotatedTranslation.v[1] + offsetTranslation.v[1];
     newPose.vecWorldFromDriverTranslation[2] = rotatedTranslation.v[2] + offsetTranslation.v[2];*/
 
-    // Post pose
+    //Post pose.
     GetDriver()->GetDriverHost()->TrackedDevicePoseUpdated(this->device_index_, newPose, sizeof(vr::DriverPose_t));
     this->last_pose_ = newPose;
 }

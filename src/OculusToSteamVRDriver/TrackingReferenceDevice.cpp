@@ -13,7 +13,7 @@ std::string OculusToSteamVR::TrackingReferenceDevice::GetSerial()
     return this->serial_;
 }
 
-void OculusToSteamVR::TrackingReferenceDevice::Update(SharedData sharedBuffer)
+void OculusToSteamVR::TrackingReferenceDevice::Update(SharedData* sharedBuffer)
 {
     if (this->device_index_ == vr::k_unTrackedDeviceIndexInvalid)
         return;
@@ -25,8 +25,8 @@ void OculusToSteamVR::TrackingReferenceDevice::Update(SharedData sharedBuffer)
     newPose.deviceIsConnected = true;
     newPose.result = vr::ETrackingResult::TrackingResult_Running_OK;
 
-    ovrPosef pose = sharedBuffer.trackingRefrences[this->index_].LeveledPose;
-    unsigned int flags = sharedBuffer.trackingRefrences[this->index_].TrackerFlags;
+    ovrPosef pose = sharedBuffer->trackingRefrences[this->index_].LeveledPose;
+    unsigned int flags = sharedBuffer->trackingRefrences[this->index_].TrackerFlags;
 
     /*linalg::vec<float, 3> device_position = {pose.Position.x, pose.Position.y, pose.Position.z};
 
@@ -36,7 +36,16 @@ void OculusToSteamVR::TrackingReferenceDevice::Update(SharedData sharedBuffer)
 
     linalg::vec<float, 4> device_rotation = linalg::qmul(y_quat, x_look_down);
 
-    device_position = linalg::qrot(y_quat, device_position);*/
+    device_position = linalg::qrot(y_quat, device_position);
+
+    newPose.vecPosition[0] = device_position.x;
+    newPose.vecPosition[1] = device_position.y;
+    newPose.vecPosition[2] = device_position.z;
+
+    newPose.qRotation.w = device_rotation.w;
+    newPose.qRotation.x = device_rotation.x;
+    newPose.qRotation.y = device_rotation.y;
+    newPose.qRotation.z = device_rotation.z;*/
 
     newPose.vecPosition[0] = pose.Position.x;
     newPose.vecPosition[1] = pose.Position.y;
@@ -86,7 +95,7 @@ vr::EVRInitError OculusToSteamVR::TrackingReferenceDevice::Activate(uint32_t unO
 
     //Set some universe ID (Must be 2 or higher).
     GetDriver()->GetProperties()->SetUint64Property(props, vr::Prop_CurrentUniverseId_Uint64, 31);
-    vr::VRProperties()->SetStringProperty(props, vr::Prop_TrackingSystemName_String, "oculus");
+    //vr::VRProperties()->SetStringProperty(props, vr::Prop_TrackingSystemName_String, "oculus");
 
     //Set up a model "number" (not needed but good to have).
     GetDriver()->GetProperties()->SetStringProperty(props, vr::Prop_ModelNumber_String, "oculus_trackingreference");

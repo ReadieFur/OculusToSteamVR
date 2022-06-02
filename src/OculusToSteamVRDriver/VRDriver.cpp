@@ -62,14 +62,14 @@ vr::EVRInitError OculusToSteamVR::VRDriver::InitSharedData()
     }
 
     //If we did create the mapping then we should be able create and be the initial owner of the mutex, if we didn't create the mapping then we shouldn't be the owner of the mutex.
-    /*sharedMutex = CreateMutexW(0, didCreateMapping, L"Local\\ovr_client_shared_mutex");
+    sharedMutex = CreateMutexW(0, didCreateMapping, L"Local\\ovr_client_shared_mutex");
     //No need to wait here.
     if (WaitForSingleObject(sharedMutex, 1000) != WAIT_OBJECT_0)
     {
         Log("Could not lock mutex after specified interval " + GetLastError());
         return vr::VRInitError_IPC_MutexInitFailed;
     }
-    ReleaseMutex(sharedMutex);*/
+    ReleaseMutex(sharedMutex);
 
     return vr::VRInitError_None;
 }
@@ -87,8 +87,7 @@ vr::EVRInitError OculusToSteamVR::VRDriver::Init(vr::IVRDriverContext* pDriverCo
 
     vr::EVRSettingsError settingsError;
     //Add tracking refrences (sensors).
-    //sharedBuffer->logBuffer += std::to_string(sharedBuffer->trackingRefrencesCount);
-    //for (int i = 0; i < sharedBuffer->trackingRefrencesCount; i++) this->AddDevice(std::make_shared<TrackingReferenceDevice>("oculus_tracking_refrence" + std::to_string(i), i));
+    for (int i = 0; i < sharedBuffer->trackingRefrencesCount; i++) this->AddDevice(std::make_shared<TrackingReferenceDevice>("oculus_tracking_refrence" + std::to_string(i), i));
 
     //Add the hmd as a tracked device (if specified in the config).
     if (vr::VRSettings()->GetBool(settings_key_.c_str(), "track_hmd", &settingsError)) this->AddDevice(std::make_shared<TrackerDevice>("oculus_hmd", OculusDeviceType::HMD));
@@ -128,10 +127,10 @@ void OculusToSteamVR::VRDriver::RunFrame()
     this->frame_timing_ = std::chrono::duration_cast<std::chrono::milliseconds>(now - this->last_frame_time_);
     this->last_frame_time_ = now;
 
-    //if (WaitForSingleObject(sharedMutex, 10) != WAIT_OBJECT_0) return; //Mutex lock timeout.
+    if (WaitForSingleObject(sharedMutex, 10) != WAIT_OBJECT_0) return; //Mutex lock timeout.
     //Create a copy of the shared data to keep the locked time to a minimum.
-    SharedData data = *sharedBuffer;
-    //ReleaseMutex(sharedMutex);
+    SharedData* data = sharedBuffer;
+    ReleaseMutex(sharedMutex);
 
     //Update devices.
     for (auto& device : this->devices_) device->Update(data);

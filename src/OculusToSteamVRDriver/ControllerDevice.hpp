@@ -26,7 +26,7 @@ namespace OculusToSteamVR
 
             //Inherited via IVRDevice.
             virtual std::string GetSerial() override;
-            virtual void Update(SharedData sharedBuffer) override;
+            virtual void Update(SharedData* sharedBuffer) override;
             virtual vr::TrackedDeviceIndex_t GetDeviceIndex() override;
             virtual DeviceType GetDeviceType() override;
             virtual Handedness GetHandedness();

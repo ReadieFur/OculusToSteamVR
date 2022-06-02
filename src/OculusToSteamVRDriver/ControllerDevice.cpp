@@ -13,7 +13,7 @@ std::string OculusToSteamVR::ControllerDevice::GetSerial()
     return this->serial_;
 }
 
-void OculusToSteamVR::ControllerDevice::Update(SharedData sharedBuffer)
+void OculusToSteamVR::ControllerDevice::Update(SharedData* sharedBuffer)
 {
     if (this->device_index_ == vr::k_unTrackedDeviceIndexInvalid)
         return;
@@ -48,11 +48,11 @@ void OculusToSteamVR::ControllerDevice::Update(SharedData sharedBuffer)
     newPose.poseIsValid = true;
     newPose.result = vr::ETrackingResult::TrackingResult_Running_OK;
 
-    ovrPoseStatef pose = sharedBuffer.oTrackingState.HandPoses[oHandType_];
-    unsigned int flags = sharedBuffer.oTrackingState.HandStatusFlags[oHandType_];
+    ovrPoseStatef pose = sharedBuffer->oTrackingState.HandPoses[oHandType_];
+    unsigned int flags = sharedBuffer->oTrackingState.HandStatusFlags[oHandType_];
 
 #pragma region Offsets
-    ovrQuatf inputOrientation = sharedBuffer.oTrackingState.HandPoses[oHandType_].ThePose.Orientation;
+    ovrQuatf inputOrientation = sharedBuffer->oTrackingState.HandPoses[oHandType_].ThePose.Orientation;
     ovrQuatf correctedOrientation = Helpers::OVRQuatFMul(inputOrientation, quatOffsets);
     ovrVector3f vectorOffsets = { 0,0,0 };
     //Apply left or right offset.
@@ -104,7 +104,7 @@ void OculusToSteamVR::ControllerDevice::Update(SharedData sharedBuffer)
     newPose.poseTimeOffset = 0;
 
     //Inputs.
-    ovrInputState oInputState = sharedBuffer.oInputState[oHandType_];
+    ovrInputState oInputState = sharedBuffer->oInputState[oHandType_];
     if (this->handedness_ == Handedness::LEFT)
     {
         GetDriver()->GetInput()->UpdateBooleanComponent(this->x_button_click_component_, oInputState.Buttons & ovrButton_X, 0);
