@@ -3,7 +3,7 @@
 #include <vector>
 #include <chrono>
 
-#include <IVRDevice.hpp>
+#include "IVRDevice.hpp"
 
 namespace OculusToSteamVR
 {

@@ -5,9 +5,9 @@
 
 #include <linalg.h>
 
-#include <IVRDevice.hpp>
-#include <DriverFactory.hpp>
-#include <OculusDeviceType.hpp>
+#include "IVRDevice.hpp"
+#include "DriverFactory.hpp"
+#include "OculusDeviceType.hpp"
 
 namespace OculusToSteamVR
 {

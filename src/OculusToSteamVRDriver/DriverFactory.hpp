@@ -5,7 +5,7 @@
 
 #include <openvr_driver.h>
 
-#include <IVRDriver.hpp>
+#include "IVRDriver.hpp"
 
 extern "C" __declspec(dllexport) void* HmdDriverFactory(const char* interface_name, int* return_code);
 

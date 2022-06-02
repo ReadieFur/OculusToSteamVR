@@ -86,7 +86,7 @@
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>O:\GitHub\ReadieFur\OculusToSteamVR\src\OculusToSteamVRDriver\..\libraries\openvr\headers;O:\GitHub\ReadieFur\OculusToSteamVR\src\OculusToSteamVRDriver\..\libraries\linalg;O:\GitHub\ReadieFur\OculusToSteamVR\src\OculusToSteamVRDriver\..\libraries\LibOVR\Include;O:\GitHub\ReadieFur\OculusToSteamVR\src\OculusToSteamVRDriver\..\libraries\LibOVR\Include\Extras;O:\GitHub\ReadieFur\OculusToSteamVR\src\OculusToSteamVRDriver\..\libraries\DirectX;O:\GitHub\ReadieFur\OculusToSteamVR\src\OculusToSteamVRDriver;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\libraries\openvr\headers;..\libraries\linalg;..\libraries\LibOVR\Include;..\libraries\LibOVR\Include\Extras;..\shared;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
@@ -437,7 +437,6 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
     <ClCompile Include="O:\GitHub\ReadieFur\OculusToSteamVR\src\OculusToSteamVRDriver\TrackingReferenceDevice.cpp" />
     <ClCompile Include="O:\GitHub\ReadieFur\OculusToSteamVR\src\OculusToSteamVRDriver\VRDriver.cpp" />
     <ClInclude Include="OculusDeviceType.hpp" />
-    <ClInclude Include="SharedData.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="O:\GitHub\ReadieFur\OculusToSteamVR\src\OculusToSteamVRDriver\ZERO_CHECK.vcxproj">

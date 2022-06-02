@@ -45,9 +45,6 @@
     <ClInclude Include="O:\GitHub\ReadieFur\OculusToSteamVR\src\OculusToSteamVRDriver\VRDriver.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="SharedData.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="OculusDeviceType.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>

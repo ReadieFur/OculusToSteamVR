@@ -1,6 +1,7 @@
 #include <iostream>
 #include <Windows.h>
 #include <mutex>
+#include <SharedData.hpp>
 #include <thread>
 #include <chrono>
 #include <OVR_CAPI.h>
@@ -15,18 +16,6 @@
 */
 
 #define RUN_INTERVAL 90 //Set to 90 becuase that is the max update rate of the Oculus sensors.
-
-struct SharedData
-{
-	HANDLE clientHandle; //Use with: WaitForSingleObject(clientHandle, 0) == STATUS_TIMEOUT. If true then the process is still active.
-	//std::string logBuffer; //Broken.
-	ovrTrackingState oTrackingState;
-	ovrInputState oInputState[2];
-	unsigned int vrObjectsCount;
-	ovrPoseStatef vrObjects[4]; //For now we will only support up to 4 objects. (Im not too sure how to resize the shared memeory so a vector wouldn't work).
-	unsigned int trackingRefrencesCount;
-	ovrTrackerPose trackingRefrences[4];
-};
 
 inline bool ShouldLog(int frameCount)
 {

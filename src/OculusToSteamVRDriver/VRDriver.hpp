@@ -5,8 +5,8 @@
 
 #include <openvr_driver.h>
 
-#include <IVRDriver.hpp>
-#include <IVRDevice.hpp>
+#include "IVRDriver.hpp"
+#include "IVRDevice.hpp"
 
 #include <SharedData.hpp>
 

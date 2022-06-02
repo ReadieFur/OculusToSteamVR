@@ -116,7 +116,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>..\libraries\LibOVR\Include;..\src\libraries\LibOVR\Include\Extras;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\libraries\LibOVR\Include;..\libraries\LibOVR\Include\Extras;..\shared;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -145,9 +145,6 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="OculusToSteamVRClient.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="OculusToSteamVRClient.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

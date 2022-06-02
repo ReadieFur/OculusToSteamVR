@@ -5,10 +5,10 @@
 
 #include <linalg.h>
 
-#include <IVRDevice.hpp>
-#include <DriverFactory.hpp>
+#include "IVRDevice.hpp"
+#include "DriverFactory.hpp"
 
-#include <Helpers.hpp>
+#include "Helpers.hpp"
 
 namespace OculusToSteamVR
 {
