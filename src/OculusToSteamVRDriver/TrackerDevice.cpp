@@ -12,7 +12,23 @@ std::string OculusToSteamVR::TrackerDevice::GetSerial()
     return this->serial_;
 }
 
-void OculusToSteamVR::TrackerDevice::Update(SharedData* sharedBuffer)
+inline vr::HmdQuaternion_t operator*(const vr::HmdQuaternion_t& lhs, const vr::HmdQuaternion_t& rhs) {
+    return {
+        (lhs.w * rhs.w) - (lhs.x * rhs.x) - (lhs.y * rhs.y) - (lhs.z * rhs.z),
+        (lhs.w * rhs.x) + (lhs.x * rhs.w) + (lhs.y * rhs.z) - (lhs.z * rhs.y),
+        (lhs.w * rhs.y) + (lhs.y * rhs.w) + (lhs.z * rhs.x) - (lhs.x * rhs.z),
+        (lhs.w * rhs.z) + (lhs.z * rhs.w) + (lhs.x * rhs.y) - (lhs.y * rhs.x)
+    };
+}
+
+inline vr::HmdVector3d_t quaternionRotateVector(const vr::HmdQuaternion_t& quat, const double(&vector)[3]) {
+    vr::HmdQuaternion_t vectorQuat = { 0.0, vector[0], vector[1] , vector[2] };
+    vr::HmdQuaternion_t conjugate = { quat.w, -quat.x, -quat.y, -quat.z };
+    auto rotatedVectorQuat = quat * vectorQuat * conjugate;
+    return { rotatedVectorQuat.x, rotatedVectorQuat.y, rotatedVectorQuat.z };
+}
+
+void OculusToSteamVR::TrackerDevice::Update(SharedData sharedBuffer)
 {
     if (this->device_index_ == vr::k_unTrackedDeviceIndexInvalid)
         return;
@@ -110,6 +126,19 @@ void OculusToSteamVR::TrackerDevice::Update(SharedData* sharedBuffer)
     newPose.qDriverFromHeadRotation = { 1, 0, 0, 0 };
     newPose.qWorldFromDriverRotation = { 1, 0, 0, 0 };
     newPose.poseTimeOffset = 0;
+
+    //https://github.com/pushrax/OpenVR-SpaceCalibrator/blob/master/OpenVR-SpaceCalibratorDriver/ServerTrackedDeviceProvider.cpp#L57
+    //Static offset from testing.
+    /*vr::HmdVector3d_t offsetTranslation;
+    vr::HmdQuaternion_t offsetRotation;
+    double offsetScale;
+    newPose.vecPosition[0] *= offsetScale;
+    newPose.vecPosition[1] *= offsetScale;
+    newPose.vecPosition[2] *= offsetScale;
+    vr::HmdVector3d_t rotatedTranslation = quaternionRotateVector(offsetRotation, newPose.vecWorldFromDriverTranslation);
+    newPose.vecWorldFromDriverTranslation[0] = rotatedTranslation.v[0] + offsetTranslation.v[0];
+    newPose.vecWorldFromDriverTranslation[1] = rotatedTranslation.v[1] + offsetTranslation.v[1];
+    newPose.vecWorldFromDriverTranslation[2] = rotatedTranslation.v[2] + offsetTranslation.v[2];*/
 
     // Post pose
     GetDriver()->GetDriverHost()->TrackedDevicePoseUpdated(this->device_index_, newPose, sizeof(vr::DriverPose_t));

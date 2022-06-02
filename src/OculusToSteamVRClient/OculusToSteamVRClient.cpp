@@ -30,7 +30,7 @@ struct SharedData
 inline bool ShouldLog(int frameCount)
 {
 #if TRUE
-	return frameCount % (RUN_INTERVAL * 5) == 0;  //Slower but I'm using this because I don't understand the & (Log every 5s).
+	return frameCount % (RUN_INTERVAL * 2) == 0;  //Slower but I'm using this because I don't understand the & (Log every Xs where x is the multiplicate).
 #else
 	return frameCount & 0x7FF;
 #endif
@@ -42,7 +42,7 @@ void VRLoop(ovrSession oSession, HANDLE sharedMutex, SharedData* sharedBuffer, u
 	ovrTrackingState oTrackingState = ovr_GetTrackingState(oSession, 0, false);
 	sharedBuffer->oTrackingState = oTrackingState;
 
-	WaitForSingleObject(sharedMutex, INFINITE);
+	//WaitForSingleObject(sharedMutex, INFINITE);
 
 	bool shouldLog = ShouldLog(frameCount);
 	double frameTime = ovr_GetPredictedDisplayTime(oSession, frameCount);
@@ -111,7 +111,7 @@ void VRLoop(ovrSession oSession, HANDLE sharedMutex, SharedData* sharedBuffer, u
 
 	if (shouldLog) std::cout << std::endl;
 
-	ReleaseMutex(sharedMutex);
+	//ReleaseMutex(sharedMutex);
 }
 
 int InitSharedData(HANDLE& hMapFile, SharedData*& sharedBuffer, HANDLE& sharedMutex)
@@ -167,9 +167,9 @@ int InitSharedData(HANDLE& hMapFile, SharedData*& sharedBuffer, HANDLE& sharedMu
 		return 2;
 	}
 
-	sharedMutex = CreateMutexW(0, true, L"Local\\ovr_client_shared_mutex");
-	//No need to wait here.
-	/*WaitForSingleObject(
+	//If we did create the mapping then we should be able create and be the initial owner of the mutex, if we didn't create the mapping then we shouldn't be the owner of the mutex.
+	/*sharedMutex = CreateMutexW(0, didCreateMapping, L"Local\\ovr_client_shared_mutex");
+	WaitForSingleObject(
 		sharedMutex, //Handle to mutex.
 		INFINITE); //No time-out interval.
 	ReleaseMutex(sharedMutex);*/
@@ -193,6 +193,8 @@ int main()
 	int initSharedBufferResult = InitSharedData(hMapFile, sharedBuffer, sharedMutex);
 	if (initSharedBufferResult != 0) return initSharedBufferResult;
 
+	//WaitForSingleObject(sharedMutex, INFINITE);
+
 	sharedBuffer->clientHandle = GetCurrentProcess();
 
 	ovrResult oResult;
@@ -211,6 +213,8 @@ int main()
 		return 3;
 	}
 
+
+	//TODO: Vibrations/haptics.
 	//std::thread vibThread(vibrationThread, mSession);
 
 	//Main loop.
@@ -230,6 +234,8 @@ int main()
 	sharedBuffer->vrObjects.resize(sharedBuffer->vrObjectsCount);
 	sharedBuffer->trackingRefrencesCount = ovr_GetTrackerCount(oSession);
 	sharedBuffer->trackingRefrences.resize(sharedBuffer->trackingRefrencesCount);
+
+	//ReleaseMutex(sharedMutex);
 
 	//Run up to x times per second.
 	//Add this inside the loop to allow for a dynamic rate synced with the SteamVR frame rate?
