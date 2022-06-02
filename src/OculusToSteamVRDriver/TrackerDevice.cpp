@@ -83,7 +83,7 @@ void OculusToSteamVR::TrackerDevice::Update(SharedData* sharedBuffer)
     else if (oculus_device_type_ == Object)
     {
         int index = atoi(this->serial_.substr(13).c_str()); //13 -> "oculus_object"
-        if (index > sharedBuffer->vrObjects.size()) return;
+        if (index > sharedBuffer->vrObjectsCount) return;
         pose = sharedBuffer->vrObjects[index];
         flags = ovrStatusBits_::ovrStatus_PositionValid | ovrStatusBits_::ovrStatus_OrientationValid;
     }

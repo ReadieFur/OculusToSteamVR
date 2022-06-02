@@ -4,7 +4,6 @@
 
 #include <Windows.h>
 #include <OVR_CAPI.h>
-#include <vector>
 
 struct SharedData
 {
@@ -13,7 +12,7 @@ struct SharedData
 	ovrTrackingState oTrackingState;
 	ovrInputState oInputState[2];
 	unsigned int vrObjectsCount;
-	std::vector<ovrPoseStatef> vrObjects;
+	ovrPoseStatef vrObjects[4]; //For now we will only support up to 4 objects. (Im not too sure how to resize the shared memeory so a vector wouldn't work).
 	unsigned int trackingRefrencesCount;
-	std::vector<ovrTrackerPose> trackingRefrences;
+	ovrTrackerPose trackingRefrences[4];
 };

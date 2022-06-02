@@ -5,6 +5,7 @@
 #include <chrono>
 #include <OVR_CAPI.h>
 #include <vector>
+#include <iomanip>
 
 /*Exit codes:
 * 0 Ok.
@@ -22,15 +23,15 @@ struct SharedData
 	ovrTrackingState oTrackingState;
 	ovrInputState oInputState[2];
 	unsigned int vrObjectsCount;
-	std::vector<ovrPoseStatef> vrObjects;
+	ovrPoseStatef vrObjects[4]; //For now we will only support up to 4 objects. (Im not too sure how to resize the shared memeory so a vector wouldn't work).
 	unsigned int trackingRefrencesCount;
-	std::vector<ovrTrackerPose> trackingRefrences;
+	ovrTrackerPose trackingRefrences[4];
 };
 
 inline bool ShouldLog(int frameCount)
 {
 #if TRUE
-	return frameCount % (RUN_INTERVAL * 2) == 0;  //Slower but I'm using this because I don't understand the & (Log every Xs where x is the multiplicate).
+	return frameCount % (RUN_INTERVAL * 5) == 0;  //Slower but I'm using this because I don't understand the & (Log every Xs where x is the multiplicate).
 #else
 	return frameCount & 0x7FF;
 #endif
@@ -187,6 +188,11 @@ int main()
 		return 1;
 	}
 
+	/*std::cout config
+	* Limit to 2dp, https://stackoverflow.com/questions/5907031/printing-the-correct-number-of-decimal-points-with-cout
+	*/
+	std::cout << std::fixed << std::setprecision(2);
+
 	HANDLE hMapFile;
 	SharedData* sharedBuffer;
 	HANDLE sharedMutex;
@@ -213,7 +219,6 @@ int main()
 		return 3;
 	}
 
-
 	//TODO: Vibrations/haptics.
 	//std::thread vibThread(vibrationThread, mSession);
 
@@ -231,9 +236,9 @@ int main()
 
 	//TODO: Make this dynamic as I believe the count here can change at any time.
 	sharedBuffer->vrObjectsCount = (ovr_GetConnectedControllerTypes(oSession) >> 8) & 0xf;
-	sharedBuffer->vrObjects.resize(sharedBuffer->vrObjectsCount);
+	if (sharedBuffer->vrObjectsCount > 4) sharedBuffer->vrObjectsCount = 4;
 	sharedBuffer->trackingRefrencesCount = ovr_GetTrackerCount(oSession);
-	sharedBuffer->trackingRefrences.resize(sharedBuffer->trackingRefrencesCount);
+	if (sharedBuffer->trackingRefrencesCount > 4) sharedBuffer->trackingRefrencesCount = 4;
 
 	ReleaseMutex(sharedMutex);
 

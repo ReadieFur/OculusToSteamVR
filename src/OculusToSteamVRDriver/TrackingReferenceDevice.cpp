@@ -28,25 +28,6 @@ void OculusToSteamVR::TrackingReferenceDevice::Update(SharedData* sharedBuffer)
     ovrPosef pose = sharedBuffer->trackingRefrences[this->index_].LeveledPose;
     unsigned int flags = sharedBuffer->trackingRefrences[this->index_].TrackerFlags;
 
-    /*linalg::vec<float, 3> device_position = {pose.Position.x, pose.Position.y, pose.Position.z};
-
-    linalg::vec<float, 4> y_quat{ 0, std::sinf(this->random_angle_rad_ / 2), 0, std::cosf(this->random_angle_rad_ / 2) }; // Point inwards (z- is forward)
-
-    linalg::vec<float, 4> x_look_down{ std::sinf((-3.1415f/4) / 2), 0, 0, std::cosf((-3.1415f / 4) / 2) }; // Tilt downwards to look at the centre
-
-    linalg::vec<float, 4> device_rotation = linalg::qmul(y_quat, x_look_down);
-
-    device_position = linalg::qrot(y_quat, device_position);
-
-    newPose.vecPosition[0] = device_position.x;
-    newPose.vecPosition[1] = device_position.y;
-    newPose.vecPosition[2] = device_position.z;
-
-    newPose.qRotation.w = device_rotation.w;
-    newPose.qRotation.x = device_rotation.x;
-    newPose.qRotation.y = device_rotation.y;
-    newPose.qRotation.z = device_rotation.z;*/
-
     newPose.vecPosition[0] = pose.Position.x;
     newPose.vecPosition[1] = pose.Position.y;
     newPose.vecPosition[2] = pose.Position.z;
