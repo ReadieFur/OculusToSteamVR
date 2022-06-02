@@ -48,16 +48,31 @@ void VRLoop(ovrSession oSession, HANDLE sharedMutex, SharedData* sharedBuffer, u
 	bool shouldLog = ShouldLog(frameCount);
 	double frameTime = ovr_GetPredictedDisplayTime(oSession, frameCount);
 
+	if (shouldLog)
+	{
+		//https://stackoverflow.com/questions/62226043/how-to-get-the-current-time-in-c-in-a-safe-way
+		auto start = std::chrono::system_clock::now();
+		auto legacyStart = std::chrono::system_clock::to_time_t(start);
+		char tmBuff[30];
+		ctime_s(tmBuff, sizeof(tmBuff), &legacyStart);
+		std::cout << tmBuff;
+	}
+
 	oTrackingState = ovr_GetTrackingState(oSession, frameTime, ovrTrue);
 	sharedBuffer->oTrackingState = oTrackingState;
 
 	//HMD.
 	if (shouldLog)
 	{
-		std::cout << "HMD"
-			<< " X:" << oTrackingState.HeadPose.ThePose.Position.x
-			<< " Y:" << oTrackingState.HeadPose.ThePose.Position.y
-			<< " Z:" << oTrackingState.HeadPose.ThePose.Position.z
+		std::cout << "HMD:"
+			<< "\n\tStatus:0x" << std::hex << oTrackingState.StatusFlags << std::dec
+			<< "\n\tPX:" << oTrackingState.HeadPose.ThePose.Position.x
+			<< " PY:" << oTrackingState.HeadPose.ThePose.Position.y
+			<< " PZ:" << oTrackingState.HeadPose.ThePose.Position.z
+			<< "\n\tRW:" << oTrackingState.HeadPose.ThePose.Orientation.w
+			<< " RX:" << oTrackingState.HeadPose.ThePose.Orientation.x
+			<< " RY:" << oTrackingState.HeadPose.ThePose.Orientation.y
+			<< " RZ:" << oTrackingState.HeadPose.ThePose.Orientation.z
 			<< std::endl;
 	}
 
@@ -73,17 +88,20 @@ void VRLoop(ovrSession oSession, HANDLE sharedMutex, SharedData* sharedBuffer, u
 
 		if (shouldLog)
 		{
-			std::cout << (i == 0 ? "Left Hand" : "Right Hand")
-				<< " 0x" << std::fixed << std::hex << oTrackingState.HandStatusFlags[i] << std::dec
-				<< " X:" << oTrackingState.HandPoses[i].ThePose.Position.x
-				<< " Y:" << oTrackingState.HandPoses[i].ThePose.Position.y
-				<< " Z:" << oTrackingState.HandPoses[i].ThePose.Position.z
-				<< std::hex << " Button:0x" << oInputState.Buttons
+			std::cout << (i == 0 ? "Left Hand" : "Right Hand") << ":"
+				<< "\n\tStatus:0x" << std::hex << oTrackingState.HandStatusFlags[i] << std::dec
+				<< "\n\tPX:" << oTrackingState.HandPoses[i].ThePose.Position.x
+				<< " PY:" << oTrackingState.HandPoses[i].ThePose.Position.y
+				<< " PZ:" << oTrackingState.HandPoses[i].ThePose.Position.z
+				<< "\n\tRW:" << oTrackingState.HandPoses[i].ThePose.Orientation.w
+				<< " RX:" << oTrackingState.HandPoses[i].ThePose.Orientation.x
+				<< " RY:" << oTrackingState.HandPoses[i].ThePose.Orientation.y
+				<< " RZ:" << oTrackingState.HandPoses[i].ThePose.Orientation.z
+				<< std::hex << "\n\tButton:0x" << oInputState.Buttons << std::dec
 				<< " Touch:0x" << oInputState.Touches
 				<< " Grip:" << oInputState.HandTrigger[i]
 				<< " Trigger:" << oInputState.IndexTrigger[i]
-				<< " Input Result:0x" << oResult
-				<< std::dec << std::endl;
+				<< std::endl;
 		}
 	}
 
@@ -99,16 +117,37 @@ void VRLoop(ovrSession oSession, HANDLE sharedMutex, SharedData* sharedBuffer, u
 		//Bit-shift? to display every ? frames. (I don't understand the bit shift so I don't know how often this runs).
 		if (shouldLog)
 		{
-			std::cout << "Object" << i
-				<< " X:" << oPose.ThePose.Position.x
-				<< " Y:" << oPose.ThePose.Position.y
-				<< " Z:" << oPose.ThePose.Position.z
+			std::cout << "Object" << i << ":"
+				<< "\n\tPX:" << oPose.ThePose.Position.x
+				<< " PY:" << oPose.ThePose.Position.y
+				<< " PZ:" << oPose.ThePose.Position.z
+				<< "\n\tRW:" << oPose.ThePose.Orientation.w
+				<< " RX:" << oPose.ThePose.Orientation.x
+				<< " RY:" << oPose.ThePose.Orientation.y
+				<< " RZ:" << oPose.ThePose.Orientation.z
 				<< std::endl;
 		}
 	}
 
 	//Sensors.
-	for (int i = 0; i < sharedBuffer->trackingRefrencesCount; i++) sharedBuffer->trackingRefrences[i] = ovr_GetTrackerPose(oSession, i);
+	for (int i = 0; i < sharedBuffer->trackingRefrencesCount; i++)
+	{
+		sharedBuffer->trackingRefrences[i] = ovr_GetTrackerPose(oSession, i);
+
+		if (shouldLog)
+		{
+			std::cout << "Sensor" << i << ":"
+				<< "\n\tStatus:0x" << std::hex << sharedBuffer->trackingRefrences[i].TrackerFlags << std::dec
+				<< "\n\tPX:" << sharedBuffer->trackingRefrences[i].LeveledPose.Position.x
+				<< " PY:" << sharedBuffer->trackingRefrences[i].LeveledPose.Position.y
+				<< " PZ:" << sharedBuffer->trackingRefrences[i].LeveledPose.Position.z
+				<< "\n\tRW:" << sharedBuffer->trackingRefrences[i].LeveledPose.Orientation.w
+				<< " RX:" << sharedBuffer->trackingRefrences[i].LeveledPose.Orientation.x
+				<< " RY:" << sharedBuffer->trackingRefrences[i].LeveledPose.Orientation.y
+				<< " RZ:" << sharedBuffer->trackingRefrences[i].LeveledPose.Orientation.z
+				<< std::endl;
+		}
+	}
 
 	if (shouldLog) std::cout << std::endl;
 
