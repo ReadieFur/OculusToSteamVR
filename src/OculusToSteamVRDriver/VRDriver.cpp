@@ -74,16 +74,16 @@ vr::EVRInitError OculusToSteamVR::VRDriver::InitSharedData()
     return vr::VRInitError_None;
 }
 
-vr::EVRInitError OculusToSteamVR::VRDriver::Init(vr::IVRDriverContext* pDriverContext)
+void OculusToSteamVR::VRDriver::SetupDevices()
 {
-    // Perform driver context initialisation
-    if (vr::EVRInitError init_error = vr::InitServerDriverContext(pDriverContext); init_error != vr::EVRInitError::VRInitError_None) return init_error;
+    Log("Setting up devices...");
 
-    Log("Activating OculusToSteamVR...");
-
-    //Setup the shared objects.
-    vr::EVRInitError initSharedDataResult = InitSharedData();
-    if (initSharedDataResult != vr::VRInitError_None) return initSharedDataResult;
+    if (WaitForSingleObject(sharedMutex, 1000) != WAIT_OBJECT_0)
+    {
+        Log("Could not lock mutex after specified interval " + GetLastError());
+        return;
+    }
+    else haveSetupDevices = true;
 
     vr::EVRSettingsError settingsError;
     //Add tracking refrences (sensors).
@@ -103,6 +103,32 @@ vr::EVRInitError OculusToSteamVR::VRDriver::Init(vr::IVRDriverContext* pDriverCo
 
     //Add any other tracked objects there may be.
     for (int i = 0; i < sharedBuffer->vrObjectsCount; i++) this->AddDevice(std::make_shared<TrackerDevice>("oculus_object" + std::to_string(i), OculusDeviceType::Object));
+
+    ReleaseMutex(sharedMutex);
+
+    Log("Devices Setup.");
+}
+
+vr::EVRInitError OculusToSteamVR::VRDriver::Init(vr::IVRDriverContext* pDriverContext)
+{
+    // Perform driver context initialisation
+    if (vr::EVRInitError init_error = vr::InitServerDriverContext(pDriverContext); init_error != vr::EVRInitError::VRInitError_None) return init_error;
+
+    Log("Activating OculusToSteamVR...");
+
+    //Setup the shared objects.
+    vr::EVRInitError initSharedDataResult = InitSharedData();
+    if (initSharedDataResult != vr::VRInitError_None) return initSharedDataResult;
+
+    if (WaitForSingleObject(sharedMutex, 1000) != WAIT_OBJECT_0)
+    {
+        Log("Could not lock mutex after specified interval " + GetLastError());
+        return vr::VRInitError_IPC_ConnectFailedAfterMultipleAttempts;
+    }
+    bool isClientAlive = WaitForSingleObject(sharedBuffer->clientHandle, 0) == STATUS_TIMEOUT;
+    ReleaseMutex(sharedMutex);
+    if (isClientAlive) SetupDevices();
+    else haveSetupDevices = false;
 
     Log("OculusToSteamVR Loaded Successfully.");
 
@@ -137,8 +163,15 @@ void OculusToSteamVR::VRDriver::RunFrame()
 
     if (WaitForSingleObject(sharedMutex, 10) != WAIT_OBJECT_0) return; //Mutex lock timeout.
 
-    //Update devices.
-    for (auto& device : this->devices_) device->Update(sharedBuffer);
+    //Make sure that the client is alive.
+    if (WaitForSingleObject(sharedBuffer->clientHandle, 0) == STATUS_TIMEOUT)
+    {
+        //Setup devices if they havent been already.
+        if (!haveSetupDevices) SetupDevices();
+
+        //Update devices.
+        for (auto& device : this->devices_) device->Update(sharedBuffer);
+    }
 
     ReleaseMutex(sharedMutex);
 }

@@ -47,7 +47,9 @@ namespace OculusToSteamVR
         HANDLE sharedMutex;
         long long slowLogTime;
         bool shouldSlowLog;
+        bool haveSetupDevices;
 
         virtual vr::EVRInitError InitSharedData();
+        virtual void SetupDevices();
     };
 };

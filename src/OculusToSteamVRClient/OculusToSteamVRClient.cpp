@@ -264,8 +264,6 @@ int main()
 
 	WaitForSingleObject(sharedMutex, INFINITE);
 
-	sharedBuffer->clientHandle = GetCurrentProcess();
-
 	ovrResult oResult;
 	ovrErrorInfo oErrorInfo;
 	ovrSession oSession = nullptr;
@@ -299,6 +297,9 @@ int main()
 	if (sharedBuffer->vrObjectsCount > 4) sharedBuffer->vrObjectsCount = 4;
 	sharedBuffer->trackingRefrencesCount = ovr_GetTrackerCount(oSession);
 	if (sharedBuffer->trackingRefrencesCount > 4) sharedBuffer->trackingRefrencesCount = 4;
+
+	//Add the client handle to the shared buffer. Used to indicate to other processes that the client is alive. We do this last after initial setup.
+	sharedBuffer->clientHandle = GetCurrentProcess();
 
 	ReleaseMutex(sharedMutex);
 
