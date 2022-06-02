@@ -36,13 +36,5 @@ namespace OculusToSteamVR
         OculusDeviceType oculus_device_type_;
 
         vr::DriverPose_t last_pose_ = IVRDevice::MakeDefaultPose();
-
-        bool did_vibrate_ = false;
-        float vibrate_anim_state_ = 0.f;
-
-        vr::VRInputComponentHandle_t haptic_component_ = 0;
-
-        vr::VRInputComponentHandle_t system_click_component_ = 0;
-        vr::VRInputComponentHandle_t system_touch_component_ = 0;
     };
 };

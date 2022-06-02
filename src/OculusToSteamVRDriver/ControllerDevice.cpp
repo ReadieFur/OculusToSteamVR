@@ -18,27 +18,28 @@ void OculusToSteamVR::ControllerDevice::Update(SharedData* sharedBuffer)
     if (this->device_index_ == vr::k_unTrackedDeviceIndexInvalid)
         return;
 
-    // Check if this device was asked to be identified
+    //Check if this device was asked to be identified
     auto events = GetDriver()->GetOpenVREvents();
     for (auto event : events)
     {
-        // Note here, event.trackedDeviceIndex does not necissarily equal this->device_index_, not sure why, but the component handle will match so we can just use that instead
-        //if (event.trackedDeviceIndex == this->device_index_) {
-        if (event.eventType == vr::EVREventType::VREvent_Input_HapticVibration)
+        if (event.eventType == vr::EVREventType::VREvent_Input_HapticVibration
+            && event.data.hapticVibration.componentHandle == this->haptic_component_
+            && (std::chrono::high_resolution_clock::now() > this->lastVibrationTime
+                || event.data.hapticVibration.fDurationSeconds != this->currentVibration.fDurationSeconds
+                || event.data.hapticVibration.fAmplitude != this->currentVibration.fAmplitude
+                || event.data.hapticVibration.fFrequency != this->currentVibration.fFrequency
+                )
+        )
         {
-            if (event.data.hapticVibration.componentHandle == this->haptic_component_) this->did_vibrate_ = true;
-        }
-        //}
-    }
-
-    // Check if we need to keep vibrating
-    if (this->did_vibrate_)
-    {
-        this->vibrate_anim_state_ += (GetDriver()->GetLastFrameTime().count()/1000.f);
-        if (this->vibrate_anim_state_ > 1.0f)
-        {
-            this->did_vibrate_ = false;
-            this->vibrate_anim_state_ = 0.0f;
+            this->lastVibrationTime = std::chrono::high_resolution_clock::now() + std::chrono::milliseconds{ static_cast<int>(event.data.hapticVibration.fDurationSeconds / 1000)};
+            this->currentVibration = event.data.hapticVibration;
+            sharedBuffer->cHapticEventInfo[this->oHandType_] =
+            {
+                true,
+                event.data.hapticVibration.fDurationSeconds,
+                event.data.hapticVibration.fAmplitude,
+                event.data.hapticVibration.fFrequency
+            };
         }
     }
 

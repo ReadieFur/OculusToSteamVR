@@ -49,10 +49,10 @@ namespace OculusToSteamVR
         Handedness handedness_;
         ovrHandType oHandType_;
 
-        vr::DriverPose_t last_pose_;
+        std::chrono::steady_clock::time_point lastVibrationTime;
+        vr::VREvent_HapticVibration_t currentVibration;
 
-        bool did_vibrate_ = false;
-        float vibrate_anim_state_ = 0.f;
+        vr::DriverPose_t last_pose_;
 
         vr::VRInputComponentHandle_t haptic_component_ = 0;
 

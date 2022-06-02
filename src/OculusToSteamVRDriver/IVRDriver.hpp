@@ -68,6 +68,7 @@ namespace OculusToSteamVR
         /// </summary>
         /// <param name="message">Message to log</param>
         virtual void Log(std::string message) = 0;
+        virtual bool ShouldSlowLog() = 0;
 
         virtual inline const char* const* GetInterfaceVersions() override
         {
@@ -75,5 +76,8 @@ namespace OculusToSteamVR
         };
 
         virtual ~IVRDriver() {}
+
+    private:
+
     };
 }

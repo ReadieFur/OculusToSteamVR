@@ -22,6 +22,7 @@ namespace OculusToSteamVR
         virtual bool AddDevice(std::shared_ptr<IVRDevice> device) override;
         virtual SettingsValue GetSettingsValue(std::string key) override;
         virtual void Log(std::string message) override;
+        virtual bool ShouldSlowLog() override;
 
         virtual vr::IVRDriverInput* GetInput() override;
         virtual vr::CVRPropertyHelpers* GetProperties() override;
@@ -44,7 +45,9 @@ namespace OculusToSteamVR
         std::string settings_key_ = "driver_oculus_to_steamvr";
         SharedData* sharedBuffer;
         HANDLE sharedMutex;
-        
+        long long slowLogTime;
+        bool shouldSlowLog;
+
         virtual vr::EVRInitError InitSharedData();
     };
 };

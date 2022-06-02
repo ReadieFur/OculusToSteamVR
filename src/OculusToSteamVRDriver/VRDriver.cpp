@@ -95,9 +95,9 @@ vr::EVRInitError OculusToSteamVR::VRDriver::Init(vr::IVRDriverContext* pDriverCo
 
     //Add the controllers as trackers (if specified).
     //This isn't a mess :).
-    if (vr::VRSettings()->GetBool(settings_key_.c_str(), "controllers_as_trackers", &settingsError)) for (int i = 0; i < 2; i++)
+    /*if (vr::VRSettings()->GetBool(settings_key_.c_str(), "controllers_as_trackers", &settingsError)) for (int i = 0; i < 2; i++)
         this->AddDevice(std::make_shared<TrackerDevice>("oculus_controller" + std::to_string(i), i == 0 ? OculusDeviceType::Controller_Left : OculusDeviceType::Controller_Right));
-    else for (int i = 0; i < 2; i++) this->AddDevice(std::make_shared<ControllerDevice>("oculus_controller" + std::to_string(i),
+    else*/ for (int i = 0; i < 2; i++) this->AddDevice(std::make_shared<ControllerDevice>("oculus_controller" + std::to_string(i),
         i == 0 ? ControllerDevice::Handedness::LEFT : ControllerDevice::Handedness::RIGHT));
     if (settingsError == vr::VRSettingsError_UnsetSettingHasNoDefault) vr::VRSettings()->SetBool(settings_key_.c_str(), "controllers_as_trackers", true);
 
@@ -126,14 +126,21 @@ void OculusToSteamVR::VRDriver::RunFrame()
     std::chrono::system_clock::time_point now = std::chrono::system_clock::now();
     this->frame_timing_ = std::chrono::duration_cast<std::chrono::milliseconds>(now - this->last_frame_time_);
     this->last_frame_time_ = now;
+    this->slowLogTime += frame_timing_.count();
+
+    if (slowLogTime >= 5000)
+    {
+        slowLogTime = 0;
+        shouldSlowLog = true;
+    }
+    else shouldSlowLog = false;
 
     if (WaitForSingleObject(sharedMutex, 10) != WAIT_OBJECT_0) return; //Mutex lock timeout.
-    //Create a copy of the shared data to keep the locked time to a minimum.
-    SharedData* data = sharedBuffer;
-    ReleaseMutex(sharedMutex);
 
     //Update devices.
-    for (auto& device : this->devices_) device->Update(data);
+    for (auto& device : this->devices_) device->Update(sharedBuffer);
+
+    ReleaseMutex(sharedMutex);
 }
 
 bool OculusToSteamVR::VRDriver::ShouldBlockStandbyMode()
@@ -214,6 +221,11 @@ void OculusToSteamVR::VRDriver::Log(std::string message)
 {
     std::string message_endl = message + "\n";
     vr::VRDriverLog()->Log(message_endl.c_str());
+}
+
+bool OculusToSteamVR::VRDriver::ShouldSlowLog()
+{
+    return shouldSlowLog;
 }
 
 vr::IVRDriverInput* OculusToSteamVR::VRDriver::GetInput()

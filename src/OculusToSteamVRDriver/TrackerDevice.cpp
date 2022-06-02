@@ -12,56 +12,20 @@ std::string OculusToSteamVR::TrackerDevice::GetSerial()
     return this->serial_;
 }
 
-inline vr::HmdQuaternion_t operator*(const vr::HmdQuaternion_t& lhs, const vr::HmdQuaternion_t& rhs) {
-    return {
-        (lhs.w * rhs.w) - (lhs.x * rhs.x) - (lhs.y * rhs.y) - (lhs.z * rhs.z),
-        (lhs.w * rhs.x) + (lhs.x * rhs.w) + (lhs.y * rhs.z) - (lhs.z * rhs.y),
-        (lhs.w * rhs.y) + (lhs.y * rhs.w) + (lhs.z * rhs.x) - (lhs.x * rhs.z),
-        (lhs.w * rhs.z) + (lhs.z * rhs.w) + (lhs.x * rhs.y) - (lhs.y * rhs.x)
-    };
-}
-
-inline vr::HmdVector3d_t quaternionRotateVector(const vr::HmdQuaternion_t& quat, const double(&vector)[3]) {
-    vr::HmdQuaternion_t vectorQuat = { 0.0, vector[0], vector[1] , vector[2] };
-    vr::HmdQuaternion_t conjugate = { quat.w, -quat.x, -quat.y, -quat.z };
-    auto rotatedVectorQuat = quat * vectorQuat * conjugate;
-    return { rotatedVectorQuat.x, rotatedVectorQuat.y, rotatedVectorQuat.z };
-}
-
 void OculusToSteamVR::TrackerDevice::Update(SharedData* sharedBuffer)
 {
     if (this->device_index_ == vr::k_unTrackedDeviceIndexInvalid)
         return;
-
-    // Check if this device was asked to be identified
-    auto events = GetDriver()->GetOpenVREvents();
-    for (auto event : events)
-    {
-        // Note here, event.trackedDeviceIndex does not necissarily equal this->device_index_, not sure why, but the component handle will match so we can just use that instead
-        //if (event.trackedDeviceIndex == this->device_index_) {
-        if (event.eventType == vr::EVREventType::VREvent_Input_HapticVibration)
-        {
-            if (event.data.hapticVibration.componentHandle == this->haptic_component_) this->did_vibrate_ = true;
-        }
-        //}
-    }
-
-    // Check if we need to keep vibrating
-    if (this->did_vibrate_)
-    {
-        this->vibrate_anim_state_ += (GetDriver()->GetLastFrameTime().count()/1000.f);
-        if (this->vibrate_anim_state_ > 1.0f)
-        {
-            this->did_vibrate_ = false;
-            this->vibrate_anim_state_ = 0.0f;
-        }
-    }
 
     //Setup pose for this frame.
     //auto newPose = IVRDevice::MakeDefaultPose();
     auto newPose = this->last_pose_;
     newPose.poseIsValid = true;
     newPose.result = vr::ETrackingResult::TrackingResult_Running_OK;
+    newPose.qDriverFromHeadRotation = { 1, 0, 0, 0 };
+    newPose.qWorldFromDriverRotation = { 1, 0, 0, 0 };
+    newPose.vecWorldFromDriverTranslation[0] = newPose.vecWorldFromDriverTranslation[1] = newPose.vecWorldFromDriverTranslation[2] = 0;
+    newPose.vecDriverFromHeadTranslation[0] = newPose.vecDriverFromHeadTranslation[1] = newPose.vecDriverFromHeadTranslation[2] = 0;
 
     ovrPoseStatef pose;
     unsigned int flags;
@@ -111,7 +75,7 @@ void OculusToSteamVR::TrackerDevice::Update(SharedData* sharedBuffer)
     }
 
     //Misc.
-    /*newPose.vecVelocity[0] = pose.LinearVelocity.x;
+    newPose.vecVelocity[0] = pose.LinearVelocity.x;
     newPose.vecVelocity[1] = pose.LinearVelocity.y;
     newPose.vecVelocity[2] = pose.LinearVelocity.z;
     newPose.vecAcceleration[0] = pose.LinearAcceleration.x;
@@ -122,23 +86,8 @@ void OculusToSteamVR::TrackerDevice::Update(SharedData* sharedBuffer)
     newPose.vecAngularAcceleration[2] = pose.AngularAcceleration.z;
     newPose.vecAngularVelocity[0] = pose.AngularVelocity.x;
     newPose.vecAngularVelocity[1] = pose.AngularVelocity.y;
-    newPose.vecAngularVelocity[2] = pose.AngularVelocity.z;*/
-    newPose.qDriverFromHeadRotation = { 1, 0, 0, 0 };
-    newPose.qWorldFromDriverRotation = { 1, 0, 0, 0 };
+    newPose.vecAngularVelocity[2] = pose.AngularVelocity.z;
     newPose.poseTimeOffset = 0;
-
-    //https://github.com/pushrax/OpenVR-SpaceCalibrator/blob/master/OpenVR-SpaceCalibratorDriver/ServerTrackedDeviceProvider.cpp#L57
-    //Static offset from testing.
-    /*vr::HmdVector3d_t offsetTranslation{-38, -0.7, 8.85};
-    vr::HmdQuaternion_t offsetRotation { -0.043, 0.998, 0.034, 0.010 };
-    double offsetScale = 1;
-    newPose.vecPosition[0] *= offsetScale;
-    newPose.vecPosition[1] *= offsetScale;
-    newPose.vecPosition[2] *= offsetScale;
-    vr::HmdVector3d_t rotatedTranslation = quaternionRotateVector(offsetRotation, newPose.vecWorldFromDriverTranslation);
-    newPose.vecWorldFromDriverTranslation[0] = rotatedTranslation.v[0] + offsetTranslation.v[0];
-    newPose.vecWorldFromDriverTranslation[1] = rotatedTranslation.v[1] + offsetTranslation.v[1];
-    newPose.vecWorldFromDriverTranslation[2] = rotatedTranslation.v[2] + offsetTranslation.v[2];*/
 
     //Post pose.
     GetDriver()->GetDriverHost()->TrackedDevicePoseUpdated(this->device_index_, newPose, sizeof(vr::DriverPose_t));
