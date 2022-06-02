@@ -15,10 +15,8 @@ std::string OculusToSteamVR::ControllerDevice::GetSerial()
 
 void OculusToSteamVR::ControllerDevice::Update(SharedData* sharedBuffer)
 {
-    if (this->device_index_ == vr::k_unTrackedDeviceIndexInvalid)
-        return;
+    if (this->device_index_ == vr::k_unTrackedDeviceIndexInvalid) return;
 
-    //Check if this device was asked to be identified
     auto events = GetDriver()->GetOpenVREvents();
     for (auto event : events)
     {
@@ -48,6 +46,11 @@ void OculusToSteamVR::ControllerDevice::Update(SharedData* sharedBuffer)
     auto newPose = this->last_pose_;
     newPose.poseIsValid = true;
     newPose.result = vr::ETrackingResult::TrackingResult_Running_OK;
+    newPose.qDriverFromHeadRotation = { 1, 0, 0, 0 };
+    newPose.qWorldFromDriverRotation = { 1, 0, 0, 0 };
+    newPose.vecWorldFromDriverTranslation[0] = newPose.vecWorldFromDriverTranslation[1] = newPose.vecWorldFromDriverTranslation[2] = 0;
+    newPose.vecDriverFromHeadTranslation[0] = newPose.vecDriverFromHeadTranslation[1] = newPose.vecDriverFromHeadTranslation[2] = 0;
+    newPose.poseTimeOffset = 0;
 
     ovrPoseStatef pose = sharedBuffer->oTrackingState.HandPoses[oHandType_];
     unsigned int flags = sharedBuffer->oTrackingState.HandStatusFlags[oHandType_];
@@ -100,9 +103,6 @@ void OculusToSteamVR::ControllerDevice::Update(SharedData* sharedBuffer)
     newPose.vecAngularVelocity[0] = pose.AngularVelocity.x;
     newPose.vecAngularVelocity[1] = pose.AngularVelocity.y;
     newPose.vecAngularVelocity[2] = pose.AngularVelocity.z;
-    newPose.qDriverFromHeadRotation = { 1, 0, 0, 0 };
-    newPose.qWorldFromDriverRotation = { 1, 0, 0, 0 };
-    newPose.poseTimeOffset = 0;
 
     //Inputs.
     ovrInputState oInputState = sharedBuffer->oInputState[oHandType_];

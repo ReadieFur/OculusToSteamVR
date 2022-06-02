@@ -95,9 +95,9 @@ vr::EVRInitError OculusToSteamVR::VRDriver::Init(vr::IVRDriverContext* pDriverCo
 
     //Add the controllers as trackers (if specified).
     //This isn't a mess :).
-    /*if (vr::VRSettings()->GetBool(settings_key_.c_str(), "controllers_as_trackers", &settingsError)) for (int i = 0; i < 2; i++)
+    if (vr::VRSettings()->GetBool(settings_key_.c_str(), "controllers_as_trackers", &settingsError)) for (int i = 0; i < 2; i++)
         this->AddDevice(std::make_shared<TrackerDevice>("oculus_controller" + std::to_string(i), i == 0 ? OculusDeviceType::Controller_Left : OculusDeviceType::Controller_Right));
-    else*/ for (int i = 0; i < 2; i++) this->AddDevice(std::make_shared<ControllerDevice>("oculus_controller" + std::to_string(i),
+    else for (int i = 0; i < 2; i++) this->AddDevice(std::make_shared<ControllerDevice>("oculus_controller" + std::to_string(i),
         i == 0 ? ControllerDevice::Handedness::LEFT : ControllerDevice::Handedness::RIGHT));
     if (settingsError == vr::VRSettingsError_UnsetSettingHasNoDefault) vr::VRSettings()->SetBool(settings_key_.c_str(), "controllers_as_trackers", true);
 

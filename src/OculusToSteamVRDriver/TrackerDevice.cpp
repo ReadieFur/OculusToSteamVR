@@ -14,8 +14,7 @@ std::string OculusToSteamVR::TrackerDevice::GetSerial()
 
 void OculusToSteamVR::TrackerDevice::Update(SharedData* sharedBuffer)
 {
-    if (this->device_index_ == vr::k_unTrackedDeviceIndexInvalid)
-        return;
+    if (this->device_index_ == vr::k_unTrackedDeviceIndexInvalid) return;
 
     //Setup pose for this frame.
     //auto newPose = IVRDevice::MakeDefaultPose();
@@ -26,6 +25,7 @@ void OculusToSteamVR::TrackerDevice::Update(SharedData* sharedBuffer)
     newPose.qWorldFromDriverRotation = { 1, 0, 0, 0 };
     newPose.vecWorldFromDriverTranslation[0] = newPose.vecWorldFromDriverTranslation[1] = newPose.vecWorldFromDriverTranslation[2] = 0;
     newPose.vecDriverFromHeadTranslation[0] = newPose.vecDriverFromHeadTranslation[1] = newPose.vecDriverFromHeadTranslation[2] = 0;
+    newPose.poseTimeOffset = 0;
 
     ovrPoseStatef pose;
     unsigned int flags;
@@ -87,7 +87,6 @@ void OculusToSteamVR::TrackerDevice::Update(SharedData* sharedBuffer)
     newPose.vecAngularVelocity[0] = pose.AngularVelocity.x;
     newPose.vecAngularVelocity[1] = pose.AngularVelocity.y;
     newPose.vecAngularVelocity[2] = pose.AngularVelocity.z;
-    newPose.poseTimeOffset = 0;
 
     //Post pose.
     GetDriver()->GetDriverHost()->TrackedDevicePoseUpdated(this->device_index_, newPose, sizeof(vr::DriverPose_t));

@@ -75,7 +75,7 @@ void VRLoop(ovrSession oSession, HANDLE sharedMutex, SharedData* sharedBuffer, u
 		//Update input state values.
 		sharedBuffer->oInputState[i] = oInputState;
 
-		//Vibration.
+		//Vibration, https://github.com/mm0zct/Oculus_Touch_Steam_Link/blob/main/ovr_test/ovr_test.cpp#L111-L152
 		if (sharedBuffer->cHapticEventInfo[i].shouldVibrate)
 		{
 			sharedBuffer->cHapticEventInfo[i].shouldVibrate = false;
@@ -104,7 +104,7 @@ void VRLoop(ovrSession oSession, HANDLE sharedMutex, SharedData* sharedBuffer, u
 				}
 				else hapticsBuffer[j] = 0;
 			}
-			ovr_SubmitControllerVibration(oSession, (i > 0) ? ovrControllerType_RTouch : ovrControllerType_LTouch, &oHapticsBuffer);
+			ovr_SubmitControllerVibration(oSession, i == 0 ? ovrControllerType_LTouch : ovrControllerType_RTouch, &oHapticsBuffer);
 			for (int j = 0; j < hapticsBufferSize; j++) hapticsBuffer[j] = 255;
 		}
 

@@ -15,15 +15,18 @@ std::string OculusToSteamVR::TrackingReferenceDevice::GetSerial()
 
 void OculusToSteamVR::TrackingReferenceDevice::Update(SharedData* sharedBuffer)
 {
-    if (this->device_index_ == vr::k_unTrackedDeviceIndexInvalid)
-        return;
+    if (this->device_index_ == vr::k_unTrackedDeviceIndexInvalid) return;
 
     // Setup pose for this frame
     //auto newPose = IVRDevice::MakeDefaultPose();
     auto newPose = this->last_pose_;
     newPose.poseIsValid = true;
-    newPose.deviceIsConnected = true;
     newPose.result = vr::ETrackingResult::TrackingResult_Running_OK;
+    newPose.qDriverFromHeadRotation = { 1, 0, 0, 0 };
+    newPose.qWorldFromDriverRotation = { 1, 0, 0, 0 };
+    newPose.vecWorldFromDriverTranslation[0] = newPose.vecWorldFromDriverTranslation[1] = newPose.vecWorldFromDriverTranslation[2] = 0;
+    newPose.vecDriverFromHeadTranslation[0] = newPose.vecDriverFromHeadTranslation[1] = newPose.vecDriverFromHeadTranslation[2] = 0;
+    newPose.poseTimeOffset = 0;
 
     ovrPosef pose = sharedBuffer->trackingRefrences[this->index_].LeveledPose;
     unsigned int flags = sharedBuffer->trackingRefrences[this->index_].TrackerFlags;
