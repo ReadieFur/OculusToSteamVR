@@ -29,10 +29,13 @@ inline bool ShouldLog(int frameCount)
 void VRLoop(ovrSession oSession, HANDLE sharedMutex, SharedData* sharedBuffer, uint64_t frameCount,
 	ovrHapticsBuffer& oHapticsBuffer, uint8_t* hapticsBuffer, unsigned int hapticsBufferSize)
 {
+	WaitForSingleObject(sharedMutex, INFINITE);
+
+	//Used to indicate to other processes that the client is alive. We do this last after initial setup.
+	sharedBuffer->clientTime = std::chrono::high_resolution_clock::now();
+
 	ovrTrackingState oTrackingState = ovr_GetTrackingState(oSession, 0, false);
 	sharedBuffer->oTrackingState = oTrackingState;
-
-	WaitForSingleObject(sharedMutex, INFINITE);
 
 	bool shouldLog = ShouldLog(frameCount);
 	double frameTime = ovr_GetPredictedDisplayTime(oSession, frameCount);
@@ -297,9 +300,6 @@ int main()
 	if (sharedBuffer->vrObjectsCount > 4) sharedBuffer->vrObjectsCount = 4;
 	sharedBuffer->trackingRefrencesCount = ovr_GetTrackerCount(oSession);
 	if (sharedBuffer->trackingRefrencesCount > 4) sharedBuffer->trackingRefrencesCount = 4;
-
-	//Add the client handle to the shared buffer. Used to indicate to other processes that the client is alive. We do this last after initial setup.
-	sharedBuffer->clientHandle = GetCurrentProcess();
 
 	ReleaseMutex(sharedMutex);
 

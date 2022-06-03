@@ -1,5 +1,7 @@
 #pragma once
 
+#define NOMINMAX
+
 #include <vector>
 #include <memory>
 
@@ -50,6 +52,7 @@ namespace OculusToSteamVR
         bool haveSetupDevices;
 
         virtual vr::EVRInitError InitSharedData();
-        virtual void SetupDevices();
+        virtual bool IsClientAlive(std::chrono::steady_clock::time_point clientTime);
+        virtual void SetupDevices(bool acquireLock);
     };
 };

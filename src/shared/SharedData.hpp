@@ -1,7 +1,5 @@
 #pragma once
 
-#define NOMINMAX
-
 #include <Windows.h>
 #include <OVR_CAPI.h>
 
@@ -15,7 +13,7 @@ struct HapticEventInfo
 
 struct SharedData
 {
-	HANDLE clientHandle; //Use with: WaitForSingleObject(clientHandle, 0) == STATUS_TIMEOUT. If true then the process is still active.
+	std::chrono::steady_clock::time_point clientTime;
 	//std::string logBuffer; //Broken.
 	ovrTrackingState oTrackingState;
 	ovrInputState oInputState[2];
