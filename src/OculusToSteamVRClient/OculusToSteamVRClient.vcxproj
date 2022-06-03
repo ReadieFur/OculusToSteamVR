@@ -17,6 +17,9 @@
       <Configuration>Release</Configuration>
       <Platform>x64</Platform>
     </ProjectConfiguration>
+    <Content Include="manifest.vrmanifest">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
@@ -145,6 +148,9 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="OculusToSteamVRClient.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="manifest.vrmanifest" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
