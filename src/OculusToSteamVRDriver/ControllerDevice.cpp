@@ -209,7 +209,6 @@ vr::EVRInitError OculusToSteamVR::ControllerDevice::Activate(uint32_t unObjectId
         GetDriver()->GetProperties()->SetStringProperty(props, vr::Prop_RenderModelName_String, "oculus_cv1_controller_right");
         GetDriver()->GetProperties()->SetInt32Property(props, vr::Prop_ControllerRoleHint_Int32, vr::ETrackedControllerRole::TrackedControllerRole_RightHand);
     }
-    GetDriver()->GetProperties()->SetStringProperty(props, vr::Prop_RenderModelName_String, "{htc}/rendermodels/vr_tracker_vive_1_0");
 
     //Set controller profile.
     GetDriver()->GetProperties()->SetStringProperty(props, vr::Prop_InputProfilePath_String, "{oculus}/input/touch_profile.json");
