@@ -1,24 +1,26 @@
 #include "TrackerDevice.hpp"
 #include <Windows.h>
 
-OculusToSteamVR::TrackerDevice::TrackerDevice(std::string serial, OculusDeviceType oculusDeviceType):
-    serial_(serial),
-    oculus_device_type_(oculusDeviceType)
+OculusToSteamVR::TrackerDevice::TrackerDevice(unsigned int index, OculusDeviceType oculusDeviceType):
+    index(index),
+    oculusDeviceType(oculusDeviceType)
 {
+    //OSC -> Oculus Steam Tracker.
+    serial = "OST-" + Helpers::GetSerialSuffix(index);
 }
 
 std::string OculusToSteamVR::TrackerDevice::GetSerial()
 {
-    return this->serial_;
+    return serial;
 }
 
 void OculusToSteamVR::TrackerDevice::Update(SharedData* sharedBuffer)
 {
-    if (this->device_index_ == vr::k_unTrackedDeviceIndexInvalid) return;
+    if (deviceIndex == vr::k_unTrackedDeviceIndexInvalid) return;
 
     //Setup pose for this frame.
     //auto newPose = IVRDevice::MakeDefaultPose();
-    auto newPose = this->last_pose_;
+    auto newPose = lastPose;
     newPose.poseIsValid = true;
     newPose.result = vr::ETrackingResult::TrackingResult_Running_OK;
     newPose.qDriverFromHeadRotation = { 1, 0, 0, 0 };
@@ -29,24 +31,24 @@ void OculusToSteamVR::TrackerDevice::Update(SharedData* sharedBuffer)
 
     ovrPoseStatef pose;
     unsigned int flags;
-    if (oculus_device_type_ == HMD)
+    if (oculusDeviceType == HMD)
     {
         pose = sharedBuffer->oTrackingState.HeadPose;
         flags = sharedBuffer->oTrackingState.StatusFlags;
     }
-    else if (oculus_device_type_ == Controller_Left)
+    else if (oculusDeviceType == ControllerLeft)
     {
         pose = sharedBuffer->oTrackingState.HandPoses[ovrHandType::ovrHand_Left];
         flags = sharedBuffer->oTrackingState.HandStatusFlags[ovrHandType::ovrHand_Left];
     }
-    else if (oculus_device_type_ == Controller_Right)
+    else if (oculusDeviceType == ControllerRight)
     {
         pose = sharedBuffer->oTrackingState.HandPoses[ovrHandType::ovrHand_Right];
         flags = sharedBuffer->oTrackingState.HandStatusFlags[ovrHandType::ovrHand_Right];
     }
-    else if (oculus_device_type_ == Object)
+    else if (oculusDeviceType == Object)
     {
-        int index = atoi(this->serial_.substr(13).c_str()); //13 -> "oculus_object"
+        int index = atoi(serial.substr(13).c_str()); //13 -> "oculus_object"
         if (index > sharedBuffer->vrObjectsCount) return;
         pose = sharedBuffer->vrObjects[index];
         flags = ovrStatusBits_::ovrStatus_PositionValid | ovrStatusBits_::ovrStatus_OrientationValid;
@@ -89,8 +91,8 @@ void OculusToSteamVR::TrackerDevice::Update(SharedData* sharedBuffer)
     newPose.vecAngularVelocity[2] = pose.AngularVelocity.z;
 
     //Post pose.
-    GetDriver()->GetDriverHost()->TrackedDevicePoseUpdated(this->device_index_, newPose, sizeof(vr::DriverPose_t));
-    this->last_pose_ = newPose;
+    GetDriver()->GetDriverHost()->TrackedDevicePoseUpdated(deviceIndex, newPose, sizeof(vr::DriverPose_t));
+    lastPose = newPose;
 }
 
 DeviceType OculusToSteamVR::TrackerDevice::GetDeviceType()
@@ -100,28 +102,34 @@ DeviceType OculusToSteamVR::TrackerDevice::GetDeviceType()
 
 vr::TrackedDeviceIndex_t OculusToSteamVR::TrackerDevice::GetDeviceIndex()
 {
-    return this->device_index_;
+    return deviceIndex;
 }
 
 vr::EVRInitError OculusToSteamVR::TrackerDevice::Activate(uint32_t unObjectId)
 {
-    this->device_index_ = unObjectId;
+    deviceIndex = unObjectId;
 
-    GetDriver()->Log("Activating tracker " + this->serial_);
+    GetDriver()->Log("Activating tracker " + serial);
 
     //Get the properties handle.
-    auto props = GetDriver()->GetProperties()->TrackedDeviceToPropertyContainer(this->device_index_);
+    auto props = GetDriver()->GetProperties()->TrackedDeviceToPropertyContainer(deviceIndex);
 
     //Set some universe ID (Must be 2 or higher).
     GetDriver()->GetProperties()->SetUint64Property(props, vr::Prop_CurrentUniverseId_Uint64, 31);
+    GetDriver()->GetProperties()->SetStringProperty(props, vr::Prop_TrackingSystemName_String, "oculus");
 
-    // Set up a model "number" (not needed but good to have)
-    GetDriver()->GetProperties()->SetStringProperty(props, vr::Prop_ModelNumber_String, "Vive Tracker Pro MV");
+    // Set up a model "number" (not needed but good to have).
+    std::string modelString = "Oculus ";
+    if (oculusDeviceType == HMD) modelString += "HMD";
+    else if (oculusDeviceType == ControllerLeft) modelString += "Touch Left";
+    else if (oculusDeviceType == ControllerRight) modelString += "Touch Right";
+    else if (oculusDeviceType == Object) modelString += "Object " + std::to_string(index);
+    GetDriver()->GetProperties()->SetStringProperty(props, vr::Prop_ModelNumber_String, modelString.c_str());
 
     //Opt out of hand selection.
     GetDriver()->GetProperties()->SetInt32Property(props, vr::Prop_ControllerRoleHint_Int32, vr::ETrackedControllerRole::TrackedControllerRole_OptOut);
-    vr::VRProperties()->SetInt32Property(props, vr::Prop_DeviceClass_Int32, vr::TrackedDeviceClass_GenericTracker);
-    vr::VRProperties()->SetInt32Property(props, vr::Prop_ControllerHandSelectionPriority_Int32, -1);
+    GetDriver()->GetProperties()->SetInt32Property(props, vr::Prop_DeviceClass_Int32, vr::TrackedDeviceClass_GenericTracker);
+    GetDriver()->GetProperties()->SetInt32Property(props, vr::Prop_ControllerHandSelectionPriority_Int32, -1);
 
     //Set controller profile (not used I don't believe but without this OVR gets angry).
     GetDriver()->GetProperties()->SetStringProperty(props, vr::Prop_InputProfilePath_String, "{htc}/input/vive_tracker_profile.json");
@@ -140,17 +148,16 @@ vr::EVRInitError OculusToSteamVR::TrackerDevice::Activate(uint32_t unObjectId)
     GetDriver()->GetProperties()->SetStringProperty(props, vr::Prop_NamedIconPathDeviceAlertLow_String, "{htc}/icons/tracker_status_ready_low.png");
 
     //https://github.com/SDraw/driver_kinectV2/blob/5931c33c41b726765cca84c0bbffb3a3f86efde8/driver_kinectV2/CTrackerVive.cpp
-    vr::VRProperties()->SetStringProperty(props, vr::Prop_TrackingSystemName_String, "oculus");
-    vr::VRProperties()->SetStringProperty(props, vr::Prop_SerialNumber_String, (std::string("LHR-CB0CD0"/*0"*/) + std::to_string(unObjectId)).c_str());
-    vr::VRProperties()->SetStringProperty(props, vr::Prop_ManufacturerName_String, "HTC");
-    vr::VRProperties()->SetStringProperty(props, vr::Prop_ResourceRoot_String, "htc");
+    GetDriver()->GetProperties()->SetStringProperty(props, vr::Prop_SerialNumber_String, serial.c_str());
+    GetDriver()->GetProperties()->SetStringProperty(props, vr::Prop_ManufacturerName_String, "HTC");
+    GetDriver()->GetProperties()->SetStringProperty(props, vr::Prop_ResourceRoot_String, "htc");
 
     return vr::EVRInitError::VRInitError_None;
 }
 
 void OculusToSteamVR::TrackerDevice::Deactivate()
 {
-    this->device_index_ = vr::k_unTrackedDeviceIndexInvalid;
+    deviceIndex = vr::k_unTrackedDeviceIndexInvalid;
 }
 
 void OculusToSteamVR::TrackerDevice::EnterStandby()
@@ -170,5 +177,5 @@ void OculusToSteamVR::TrackerDevice::DebugRequest(const char* pchRequest, char* 
 
 vr::DriverPose_t OculusToSteamVR::TrackerDevice::GetPose()
 {
-    return last_pose_;
+    return lastPose;
 }

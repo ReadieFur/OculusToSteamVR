@@ -2,7 +2,7 @@
 enum OculusDeviceType
 {
 	HMD,
-	Controller_Left,
-	Controller_Right,
+	ControllerLeft,
+	ControllerRight,
 	Object
 };

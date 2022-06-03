@@ -1,37 +1,38 @@
 #include "ControllerDevice.hpp"
 #include <Windows.h>
 
-OculusToSteamVR::ControllerDevice::ControllerDevice(std::string serial, ControllerDevice::Handedness handedness):
-    serial_(serial),
-    handedness_(handedness)
+OculusToSteamVR::ControllerDevice::ControllerDevice(unsigned int index, ControllerDevice::Handedness handedness):
+    handedness(handedness)
 {
-    this->oHandType_ = handedness == Handedness::LEFT ? ovrHandType::ovrHand_Left : ovrHandType::ovrHand_Right;
+    //OSC -> Oculus Steam Controller.
+    serial = "OSC-" + Helpers::GetSerialSuffix(index);
+    oHandType = handedness == Handedness::LEFT ? ovrHandType::ovrHand_Left : ovrHandType::ovrHand_Right;
 }
 
 std::string OculusToSteamVR::ControllerDevice::GetSerial()
 {
-    return this->serial_;
+    return serial;
 }
 
 void OculusToSteamVR::ControllerDevice::Update(SharedData* sharedBuffer)
 {
-    if (this->device_index_ == vr::k_unTrackedDeviceIndexInvalid) return;
+    if (deviceIndex == vr::k_unTrackedDeviceIndexInvalid) return;
 
     auto events = GetDriver()->GetOpenVREvents();
     for (auto event : events)
     {
         if (event.eventType == vr::EVREventType::VREvent_Input_HapticVibration
-            && event.data.hapticVibration.componentHandle == this->haptic_component_
-            && (std::chrono::high_resolution_clock::now() > this->lastVibrationTime
-                || event.data.hapticVibration.fDurationSeconds != this->currentVibration.fDurationSeconds
-                || event.data.hapticVibration.fAmplitude != this->currentVibration.fAmplitude
-                || event.data.hapticVibration.fFrequency != this->currentVibration.fFrequency
+            && event.data.hapticVibration.componentHandle == hapticComponent
+            && (std::chrono::high_resolution_clock::now() > lastVibrationTime
+                || event.data.hapticVibration.fDurationSeconds != currentVibration.fDurationSeconds
+                || event.data.hapticVibration.fAmplitude != currentVibration.fAmplitude
+                || event.data.hapticVibration.fFrequency != currentVibration.fFrequency
                 )
         )
         {
-            this->lastVibrationTime = std::chrono::high_resolution_clock::now() + std::chrono::milliseconds{ static_cast<int>(event.data.hapticVibration.fDurationSeconds / 1000)};
-            this->currentVibration = event.data.hapticVibration;
-            sharedBuffer->cHapticEventInfo[this->oHandType_] =
+            lastVibrationTime = std::chrono::high_resolution_clock::now() + std::chrono::milliseconds{ static_cast<int>(event.data.hapticVibration.fDurationSeconds / 1000)};
+            currentVibration = event.data.hapticVibration;
+            sharedBuffer->cHapticEventInfo[oHandType] =
             {
                 true,
                 event.data.hapticVibration.fDurationSeconds,
@@ -43,7 +44,7 @@ void OculusToSteamVR::ControllerDevice::Update(SharedData* sharedBuffer)
 
     //Setup pose for this frame.
     //auto newPose = IVRDevice::MakeDefaultPose();
-    auto newPose = this->last_pose_;
+    auto newPose = lastPose;
     newPose.poseIsValid = true;
     newPose.result = vr::ETrackingResult::TrackingResult_Running_OK;
     newPose.qDriverFromHeadRotation = { 1, 0, 0, 0 };
@@ -52,15 +53,15 @@ void OculusToSteamVR::ControllerDevice::Update(SharedData* sharedBuffer)
     newPose.vecDriverFromHeadTranslation[0] = newPose.vecDriverFromHeadTranslation[1] = newPose.vecDriverFromHeadTranslation[2] = 0;
     newPose.poseTimeOffset = 0;
 
-    ovrPoseStatef pose = sharedBuffer->oTrackingState.HandPoses[oHandType_];
-    unsigned int flags = sharedBuffer->oTrackingState.HandStatusFlags[oHandType_];
+    ovrPoseStatef pose = sharedBuffer->oTrackingState.HandPoses[oHandType];
+    unsigned int flags = sharedBuffer->oTrackingState.HandStatusFlags[oHandType];
 
 #pragma region Offsets
-    ovrQuatf inputOrientation = sharedBuffer->oTrackingState.HandPoses[oHandType_].ThePose.Orientation;
+    ovrQuatf inputOrientation = sharedBuffer->oTrackingState.HandPoses[oHandType].ThePose.Orientation;
     ovrQuatf correctedOrientation = Helpers::OVRQuatFMul(inputOrientation, quatOffsets);
     ovrVector3f vectorOffsets = { 0,0,0 };
     //Apply left or right offset.
-    if (oHandType_ == ovrHand_Right) vectorOffsets = Helpers::RotateVector2(rightVectorOffsets, inputOrientation);
+    if (oHandType == ovrHand_Right) vectorOffsets = Helpers::RotateVector2(rightVectorOffsets, inputOrientation);
     else
     {
         ovrVector3f leftVectorOffset = rightVectorOffsets;
@@ -105,39 +106,39 @@ void OculusToSteamVR::ControllerDevice::Update(SharedData* sharedBuffer)
     newPose.vecAngularVelocity[2] = pose.AngularVelocity.z;
 
     //Inputs.
-    ovrInputState oInputState = sharedBuffer->oInputState[oHandType_];
-    if (this->handedness_ == Handedness::LEFT)
+    ovrInputState oInputState = sharedBuffer->oInputState[oHandType];
+    if (handedness == Handedness::LEFT)
     {
-        GetDriver()->GetInput()->UpdateBooleanComponent(this->x_button_click_component_, oInputState.Buttons & ovrButton_X, 0);
-        GetDriver()->GetInput()->UpdateBooleanComponent(this->x_button_touch_component_, oInputState.Touches & ovrTouch_X, 0);
+        GetDriver()->GetInput()->UpdateBooleanComponent(xButtonClickComponent, oInputState.Buttons & ovrButton_X, 0);
+        GetDriver()->GetInput()->UpdateBooleanComponent(xButtonTouchComponent, oInputState.Touches & ovrTouch_X, 0);
 
-        GetDriver()->GetInput()->UpdateBooleanComponent(this->y_button_click_component_, oInputState.Buttons & ovrButton_Y, 0);
-        GetDriver()->GetInput()->UpdateBooleanComponent(this->y_button_touch_component_, oInputState.Touches & ovrTouch_Y, 0);
+        GetDriver()->GetInput()->UpdateBooleanComponent(yButtonClickComponent, oInputState.Buttons & ovrButton_Y, 0);
+        GetDriver()->GetInput()->UpdateBooleanComponent(yButtonTouchComponent, oInputState.Touches & ovrTouch_Y, 0);
 
-        GetDriver()->GetInput()->UpdateBooleanComponent(this->system_click_component_, oInputState.Buttons & ovrButton_Enter, 0);
+        GetDriver()->GetInput()->UpdateBooleanComponent(systemClickComponent, oInputState.Buttons & ovrButton_Enter, 0);
     }
-    else if (this->handedness_ == Handedness::RIGHT)
+    else if (handedness == Handedness::RIGHT)
     {
-        GetDriver()->GetInput()->UpdateBooleanComponent(this->a_button_click_component_, oInputState.Buttons & ovrButton_A, 0);
-        GetDriver()->GetInput()->UpdateBooleanComponent(this->a_button_touch_component_, oInputState.Touches & ovrTouch_A, 0);
+        GetDriver()->GetInput()->UpdateBooleanComponent(aButtonClickComponent, oInputState.Buttons & ovrButton_A, 0);
+        GetDriver()->GetInput()->UpdateBooleanComponent(aButtonTouchComponent, oInputState.Touches & ovrTouch_A, 0);
 
-        GetDriver()->GetInput()->UpdateBooleanComponent(this->b_button_click_component_, oInputState.Buttons & ovrButton_B, 0);
-        GetDriver()->GetInput()->UpdateBooleanComponent(this->b_button_touch_component_, oInputState.Touches & ovrTouch_B, 0);
+        GetDriver()->GetInput()->UpdateBooleanComponent(bButtonClickComponent, oInputState.Buttons & ovrButton_B, 0);
+        GetDriver()->GetInput()->UpdateBooleanComponent(bButtonTouchComponent, oInputState.Touches & ovrTouch_B, 0);
     }
-    GetDriver()->GetInput()->UpdateScalarComponent(this->trigger_value_component_, oInputState.IndexTrigger[oHandType_], 0);
-    GetDriver()->GetInput()->UpdateBooleanComponent(this->trigger_click_component_, oInputState.IndexTrigger[oHandType_] >= 0.9f, 0); //Allow for a small bit of click variation.
-    GetDriver()->GetInput()->UpdateBooleanComponent(this->trigger_touch_component_, oInputState.Touches & (this->handedness_ == Handedness::LEFT ? ovrTouch_LIndexTrigger : ovrTouch_RIndexTrigger), 0);
+    GetDriver()->GetInput()->UpdateScalarComponent(triggerValueComponent, oInputState.IndexTrigger[oHandType], 0);
+    GetDriver()->GetInput()->UpdateBooleanComponent(triggerClickComponent, oInputState.IndexTrigger[oHandType] >= 0.95f, 0); //Allow for a small bit of click variation.
+    GetDriver()->GetInput()->UpdateBooleanComponent(triggerTouchComponent, oInputState.Touches & (handedness == Handedness::LEFT ? ovrTouch_LIndexTrigger : ovrTouch_RIndexTrigger), 0);
 
-    GetDriver()->GetInput()->UpdateScalarComponent(this->grip_value_component_, oInputState.HandTrigger[oHandType_], 0);
+    GetDriver()->GetInput()->UpdateScalarComponent(gripValueComponent, oInputState.HandTrigger[oHandType], 0);
 
-    GetDriver()->GetInput()->UpdateBooleanComponent(this->joystick_click_component_, oInputState.Buttons & (this->handedness_ == Handedness::LEFT ? ovrButton_LThumb : ovrButton_RThumb), 0);
-    GetDriver()->GetInput()->UpdateBooleanComponent(this->joystick_touch_component_, oInputState.Touches & (this->handedness_ == Handedness::LEFT ? ovrTouch_LThumb : ovrTouch_RThumb), 0);
-    GetDriver()->GetInput()->UpdateScalarComponent(this->joystick_x_component_, oInputState.Thumbstick[oHandType_].x, 0);
-    GetDriver()->GetInput()->UpdateScalarComponent(this->joystick_y_component_, oInputState.Thumbstick[oHandType_].y, 0);
+    GetDriver()->GetInput()->UpdateBooleanComponent(joystickClickComponent, oInputState.Buttons & (handedness == Handedness::LEFT ? ovrButton_LThumb : ovrButton_RThumb), 0);
+    GetDriver()->GetInput()->UpdateBooleanComponent(joystickTouchComponent, oInputState.Touches & (handedness == Handedness::LEFT ? ovrTouch_LThumb : ovrTouch_RThumb), 0);
+    GetDriver()->GetInput()->UpdateScalarComponent(joystickXComponent, oInputState.Thumbstick[oHandType].x, 0);
+    GetDriver()->GetInput()->UpdateScalarComponent(joystickYComponent, oInputState.Thumbstick[oHandType].y, 0);
 
     // Post pose
-    GetDriver()->GetDriverHost()->TrackedDevicePoseUpdated(this->device_index_, newPose, sizeof(vr::DriverPose_t));
-    this->last_pose_ = newPose;
+    GetDriver()->GetDriverHost()->TrackedDevicePoseUpdated(deviceIndex, newPose, sizeof(vr::DriverPose_t));
+    lastPose = newPose;
 }
 
 DeviceType OculusToSteamVR::ControllerDevice::GetDeviceType()
@@ -147,74 +148,75 @@ DeviceType OculusToSteamVR::ControllerDevice::GetDeviceType()
 
 OculusToSteamVR::ControllerDevice::Handedness OculusToSteamVR::ControllerDevice::GetHandedness()
 {
-    return this->handedness_;
+    return handedness;
 }
 
 vr::TrackedDeviceIndex_t OculusToSteamVR::ControllerDevice::GetDeviceIndex()
 {
-    return this->device_index_;
+    return deviceIndex;
 }
 
 vr::EVRInitError OculusToSteamVR::ControllerDevice::Activate(uint32_t unObjectId)
 {
-    this->device_index_ = unObjectId;
+    deviceIndex = unObjectId;
 
-    GetDriver()->Log("Activating controller " + this->serial_);
+    GetDriver()->Log("Activating controller " + serial);
 
     //Get the properties handle.
-    auto props = GetDriver()->GetProperties()->TrackedDeviceToPropertyContainer(this->device_index_);
+    auto props = GetDriver()->GetProperties()->TrackedDeviceToPropertyContainer(deviceIndex);
 
     //Setup inputs and outputs.
-    GetDriver()->GetInput()->CreateHapticComponent(props, "/output/haptic", &this->haptic_component_);
+    GetDriver()->GetInput()->CreateHapticComponent(props, "/output/haptic", &hapticComponent);
 
-    GetDriver()->GetInput()->CreateBooleanComponent(props, "/input/a/click", &this->a_button_click_component_);
-    GetDriver()->GetInput()->CreateBooleanComponent(props, "/input/a/touch", &this->a_button_touch_component_);
+    GetDriver()->GetInput()->CreateBooleanComponent(props, "/input/a/click", &aButtonClickComponent);
+    GetDriver()->GetInput()->CreateBooleanComponent(props, "/input/a/touch", &aButtonTouchComponent);
 
-    GetDriver()->GetInput()->CreateBooleanComponent(props, "/input/b/click", &this->b_button_click_component_);
-    GetDriver()->GetInput()->CreateBooleanComponent(props, "/input/b/touch", &this->b_button_touch_component_);
+    GetDriver()->GetInput()->CreateBooleanComponent(props, "/input/b/click", &bButtonClickComponent);
+    GetDriver()->GetInput()->CreateBooleanComponent(props, "/input/b/touch", &bButtonTouchComponent);
 
-    GetDriver()->GetInput()->CreateBooleanComponent(props, "/input/x/click", &this->x_button_click_component_);
-    GetDriver()->GetInput()->CreateBooleanComponent(props, "/input/x/touch", &this->x_button_touch_component_);
+    GetDriver()->GetInput()->CreateBooleanComponent(props, "/input/x/click", &xButtonClickComponent);
+    GetDriver()->GetInput()->CreateBooleanComponent(props, "/input/x/touch", &xButtonTouchComponent);
 
-    GetDriver()->GetInput()->CreateBooleanComponent(props, "/input/y/click", &this->y_button_click_component_);
-    GetDriver()->GetInput()->CreateBooleanComponent(props, "/input/y/touch", &this->x_button_touch_component_);
+    GetDriver()->GetInput()->CreateBooleanComponent(props, "/input/y/click", &yButtonClickComponent);
+    GetDriver()->GetInput()->CreateBooleanComponent(props, "/input/y/touch", &xButtonTouchComponent);
 
-    GetDriver()->GetInput()->CreateBooleanComponent(props, "/input/trigger/click", &this->trigger_click_component_);
-    GetDriver()->GetInput()->CreateBooleanComponent(props, "/input/trigger/touch", &this->trigger_touch_component_);
-    GetDriver()->GetInput()->CreateScalarComponent(props, "/input/trigger/value", &this->trigger_value_component_, vr::EVRScalarType::VRScalarType_Absolute, vr::EVRScalarUnits::VRScalarUnits_NormalizedOneSided);
+    GetDriver()->GetInput()->CreateBooleanComponent(props, "/input/trigger/click", &triggerClickComponent);
+    GetDriver()->GetInput()->CreateBooleanComponent(props, "/input/trigger/touch", &triggerTouchComponent);
+    GetDriver()->GetInput()->CreateScalarComponent(props, "/input/trigger/value", &triggerValueComponent, vr::EVRScalarType::VRScalarType_Absolute, vr::EVRScalarUnits::VRScalarUnits_NormalizedOneSided);
 
-    GetDriver()->GetInput()->CreateScalarComponent(props, "/input/grip/value", &this->grip_value_component_, vr::EVRScalarType::VRScalarType_Absolute, vr::EVRScalarUnits::VRScalarUnits_NormalizedOneSided);
+    GetDriver()->GetInput()->CreateScalarComponent(props, "/input/grip/value", &gripValueComponent, vr::EVRScalarType::VRScalarType_Absolute, vr::EVRScalarUnits::VRScalarUnits_NormalizedOneSided);
 
-    GetDriver()->GetInput()->CreateBooleanComponent(props, "/input/system/click", &this->system_click_component_);
+    GetDriver()->GetInput()->CreateBooleanComponent(props, "/input/system/click", &systemClickComponent);
 
-    GetDriver()->GetInput()->CreateBooleanComponent(props, "/input/joystick/click", &this->joystick_click_component_);
-    GetDriver()->GetInput()->CreateBooleanComponent(props, "/input/joystick/touch", &this->joystick_touch_component_);
-    GetDriver()->GetInput()->CreateScalarComponent(props, "/input/joystick/x", &this->joystick_x_component_, vr::EVRScalarType::VRScalarType_Absolute, vr::EVRScalarUnits::VRScalarUnits_NormalizedTwoSided);
-    GetDriver()->GetInput()->CreateScalarComponent(props, "/input/joystick/y", &this->joystick_y_component_, vr::EVRScalarType::VRScalarType_Absolute, vr::EVRScalarUnits::VRScalarUnits_NormalizedTwoSided);
+    GetDriver()->GetInput()->CreateBooleanComponent(props, "/input/joystick/click", &joystickClickComponent);
+    GetDriver()->GetInput()->CreateBooleanComponent(props, "/input/joystick/touch", &joystickTouchComponent);
+    GetDriver()->GetInput()->CreateScalarComponent(props, "/input/joystick/x", &joystickXComponent, vr::EVRScalarType::VRScalarType_Absolute, vr::EVRScalarUnits::VRScalarUnits_NormalizedTwoSided);
+    GetDriver()->GetInput()->CreateScalarComponent(props, "/input/joystick/y", &joystickYComponent, vr::EVRScalarType::VRScalarType_Absolute, vr::EVRScalarUnits::VRScalarUnits_NormalizedTwoSided);
 
     //Set some universe ID (Must be 2 or higher).
     GetDriver()->GetProperties()->SetUint64Property(props, vr::Prop_CurrentUniverseId_Uint64, 31);
-
-    //Set up a model "number" (not needed but good to have).
-    GetDriver()->GetProperties()->SetStringProperty(props, vr::Prop_ModelNumber_String, "oculus_touch");
+    vr::VRProperties()->SetStringProperty(props, vr::Prop_TrackingSystemName_String, "oculus");
 
     //Give SteamVR a hint at what hand this controller is for.
-    if (this->handedness_ == Handedness::LEFT)
+    if (handedness == Handedness::LEFT)
     {
+        GetDriver()->GetProperties()->SetStringProperty(props, vr::Prop_ModelNumber_String, "Oculus Touch Left");
         GetDriver()->GetProperties()->SetStringProperty(props, vr::Prop_RenderModelName_String, "oculus_cv1_controller_left");
         GetDriver()->GetProperties()->SetInt32Property(props, vr::Prop_ControllerRoleHint_Int32, vr::ETrackedControllerRole::TrackedControllerRole_LeftHand);
     }
-    else if (this->handedness_ == Handedness::RIGHT)
+    else if (handedness == Handedness::RIGHT)
     {
+        GetDriver()->GetProperties()->SetStringProperty(props, vr::Prop_ModelNumber_String, "Oculus Touch Right");
         GetDriver()->GetProperties()->SetStringProperty(props, vr::Prop_RenderModelName_String, "oculus_cv1_controller_right");
         GetDriver()->GetProperties()->SetInt32Property(props, vr::Prop_ControllerRoleHint_Int32, vr::ETrackedControllerRole::TrackedControllerRole_RightHand);
     }
+    GetDriver()->GetProperties()->SetStringProperty(props, vr::Prop_SerialNumber_String, serial.c_str());
 
     //Set controller profile.
     GetDriver()->GetProperties()->SetStringProperty(props, vr::Prop_InputProfilePath_String, "{oculus}/input/touch_profile.json");
 
     //Icons.
-    std::string handString = this->handedness_ == Handedness::LEFT ? "left" : "right";
+    std::string handString = handedness == Handedness::LEFT ? "left" : "right";
     GetDriver()->GetProperties()->SetStringProperty(props, vr::Prop_NamedIconPathDeviceReady_String, ("{oculus}/icons/cv1_" + handString + "_controller_ready.png").c_str());
     GetDriver()->GetProperties()->SetStringProperty(props, vr::Prop_NamedIconPathDeviceOff_String, ("{oculus}/icons/cv1_" + handString + "_controller_off.png").c_str());
     GetDriver()->GetProperties()->SetStringProperty(props, vr::Prop_NamedIconPathDeviceSearching_String, ("{oculus}/icons/cv1_" + handString + "_controller_searching.gif").c_str());
@@ -224,14 +226,12 @@ vr::EVRInitError OculusToSteamVR::ControllerDevice::Activate(uint32_t unObjectId
     GetDriver()->GetProperties()->SetStringProperty(props, vr::Prop_NamedIconPathDeviceStandby_String, ("{oculus}/icons/cv1_" + handString + "_controller_off.png").c_str());
     GetDriver()->GetProperties()->SetStringProperty(props, vr::Prop_NamedIconPathDeviceAlertLow_String, ("{oculus}/icons/cv1_" + handString + "_controller_ready_low.png").c_str());
 
-    vr::VRProperties()->SetStringProperty(props, vr::Prop_TrackingSystemName_String, "oculus");
-
     return vr::EVRInitError::VRInitError_None;
 }
 
 void OculusToSteamVR::ControllerDevice::Deactivate()
 {
-    this->device_index_ = vr::k_unTrackedDeviceIndexInvalid;
+    deviceIndex = vr::k_unTrackedDeviceIndexInvalid;
 }
 
 void OculusToSteamVR::ControllerDevice::EnterStandby()
@@ -251,5 +251,5 @@ void OculusToSteamVR::ControllerDevice::DebugRequest(const char* pchRequest, cha
 
 vr::DriverPose_t OculusToSteamVR::ControllerDevice::GetPose()
 {
-    return last_pose_;
+    return lastPose;
 }

@@ -93,6 +93,21 @@ namespace OculusToSteamVR
 			return message;
 		}
 
+		static std::string GetSerialSuffix(unsigned int index)
+		{
+			//Max length -> 00000000
+			if (index > 99999999) return std::to_string(index - 99999999);
+			else if (index > 9999999) return std::to_string(index);
+			else if (index > 999999) return std::string("0") + std::to_string(index);
+			else if (index > 99999) return std::string("00") + std::to_string(index);
+			else if (index > 9999) return std::string("000") + std::to_string(index);
+			else if (index > 999) return std::string("0000") + std::to_string(index);
+			else if (index > 99) return std::string("00000") + std::to_string(index);
+			else if (index > 9) return std::string("000000") + std::to_string(index);
+			else if (index > 0) return std::string("0000000") + std::to_string(index);
+			else return std::string("00000000");
+		}
+
 	private:
 		static void Foo(){}
 	};

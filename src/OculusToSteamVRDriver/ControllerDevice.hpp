@@ -21,7 +21,7 @@ namespace OculusToSteamVR
                 RIGHT
             };
 
-            ControllerDevice(std::string serial, Handedness handedness);
+            ControllerDevice(unsigned int index, Handedness handedness);
             ~ControllerDevice() = default;
 
             //Inherited via IVRDevice.
@@ -44,41 +44,41 @@ namespace OculusToSteamVR
         const ovrVector3f rightVectorOffsets = { 0.00571, 0.04078, -0.03531 };
         const ovrVector3f vectorOffsets2 = { -0.000999998, -0.1, 0.0019 };
 
-        vr::TrackedDeviceIndex_t device_index_ = vr::k_unTrackedDeviceIndexInvalid;
-        std::string serial_;
-        Handedness handedness_;
-        ovrHandType oHandType_;
+        vr::TrackedDeviceIndex_t deviceIndex = vr::k_unTrackedDeviceIndexInvalid;
+        std::string serial;
+        Handedness handedness;
+        ovrHandType oHandType;
 
         std::chrono::steady_clock::time_point lastVibrationTime;
         vr::VREvent_HapticVibration_t currentVibration;
 
-        vr::DriverPose_t last_pose_;
+        vr::DriverPose_t lastPose;
 
-        vr::VRInputComponentHandle_t haptic_component_ = 0;
+        vr::VRInputComponentHandle_t hapticComponent = 0;
 
-        vr::VRInputComponentHandle_t a_button_click_component_ = 0;
-        vr::VRInputComponentHandle_t a_button_touch_component_ = 0;
+        vr::VRInputComponentHandle_t aButtonClickComponent = 0;
+        vr::VRInputComponentHandle_t aButtonTouchComponent = 0;
 
-        vr::VRInputComponentHandle_t b_button_click_component_ = 0;
-        vr::VRInputComponentHandle_t b_button_touch_component_ = 0;
+        vr::VRInputComponentHandle_t bButtonClickComponent = 0;
+        vr::VRInputComponentHandle_t bButtonTouchComponent = 0;
 
-        vr::VRInputComponentHandle_t x_button_click_component_ = 0;
-        vr::VRInputComponentHandle_t x_button_touch_component_ = 0;
+        vr::VRInputComponentHandle_t xButtonClickComponent = 0;
+        vr::VRInputComponentHandle_t xButtonTouchComponent = 0;
 
-        vr::VRInputComponentHandle_t y_button_click_component_ = 0;
-        vr::VRInputComponentHandle_t y_button_touch_component_ = 0;
+        vr::VRInputComponentHandle_t yButtonClickComponent = 0;
+        vr::VRInputComponentHandle_t yButtonTouchComponent = 0;
 
-        vr::VRInputComponentHandle_t trigger_value_component_ = 0;
-        vr::VRInputComponentHandle_t trigger_click_component_ = 0;
-        vr::VRInputComponentHandle_t trigger_touch_component_ = 0;
+        vr::VRInputComponentHandle_t triggerValueComponent = 0;
+        vr::VRInputComponentHandle_t triggerClickComponent = 0;
+        vr::VRInputComponentHandle_t triggerTouchComponent = 0;
 
-        vr::VRInputComponentHandle_t grip_value_component_ = 0;
+        vr::VRInputComponentHandle_t gripValueComponent = 0;
 
-        vr::VRInputComponentHandle_t system_click_component_ = 0;
+        vr::VRInputComponentHandle_t systemClickComponent = 0;
 
-        vr::VRInputComponentHandle_t joystick_click_component_ = 0;
-        vr::VRInputComponentHandle_t joystick_touch_component_ = 0;
-        vr::VRInputComponentHandle_t joystick_x_component_ = 0;
-        vr::VRInputComponentHandle_t joystick_y_component_ = 0;
+        vr::VRInputComponentHandle_t joystickClickComponent = 0;
+        vr::VRInputComponentHandle_t joystickTouchComponent = 0;
+        vr::VRInputComponentHandle_t joystickXComponent = 0;
+        vr::VRInputComponentHandle_t joystickYComponent = 0;
     };
 };

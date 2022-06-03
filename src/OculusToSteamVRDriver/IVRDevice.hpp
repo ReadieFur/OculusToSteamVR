@@ -4,6 +4,7 @@
 #include <openvr_driver.h>
 #include "DeviceType.hpp"
 #include <SharedData.hpp>
+#include "Helpers.hpp"
 
 namespace OculusToSteamVR
 {

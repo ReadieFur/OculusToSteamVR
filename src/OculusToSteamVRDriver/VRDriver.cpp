@@ -95,22 +95,23 @@ void OculusToSteamVR::VRDriver::SetupDevices(bool acquireLock)
 
     vr::EVRSettingsError settingsError;
     //Add tracking refrences (sensors).
-    for (int i = 0; i < sharedBuffer->trackingRefrencesCount; i++) this->AddDevice(std::make_shared<TrackingReferenceDevice>("oculus_tracking_refrence" + std::to_string(i), i));
+    for (int i = 0; i < sharedBuffer->trackingRefrencesCount; i++) AddDevice(std::make_shared<TrackingReferenceDevice>(i));
 
     //Add the hmd as a tracked device (if specified in the config).
-    if (vr::VRSettings()->GetBool(settings_key_.c_str(), "track_hmd", &settingsError)) this->AddDevice(std::make_shared<TrackerDevice>("oculus_hmd", OculusDeviceType::HMD));
+    if (vr::VRSettings()->GetBool(settings_key_.c_str(), "track_hmd", &settingsError)) AddDevice(std::make_shared<TrackerDevice>(0, OculusDeviceType::HMD));
     if (settingsError == vr::VRSettingsError_UnsetSettingHasNoDefault) vr::VRSettings()->SetBool(settings_key_.c_str(), "track_hmd", false);
 
     //Add the controllers as trackers (if specified).
     //This isn't a mess :).
-    if (vr::VRSettings()->GetBool(settings_key_.c_str(), "controllers_as_trackers", &settingsError)) for (int i = 0; i < 2; i++)
-        this->AddDevice(std::make_shared<TrackerDevice>("oculus_controller" + std::to_string(i), i == 0 ? OculusDeviceType::Controller_Left : OculusDeviceType::Controller_Right));
-    else for (int i = 0; i < 2; i++) this->AddDevice(std::make_shared<ControllerDevice>("oculus_controller" + std::to_string(i),
-        i == 0 ? ControllerDevice::Handedness::LEFT : ControllerDevice::Handedness::RIGHT));
+    if (vr::VRSettings()->GetBool(settings_key_.c_str(), "controllers_as_trackers", &settingsError))
+        for (int i = 0; i < 2; i++) AddDevice(std::make_shared<TrackerDevice>(i, i == 0 ? OculusDeviceType::ControllerLeft : OculusDeviceType::ControllerRight));
+    else
+        for (int i = 0; i < 2; i++)
+            AddDevice(std::make_shared<ControllerDevice>(i + 1, i == 0 ? ControllerDevice::Handedness::LEFT : ControllerDevice::Handedness::RIGHT)); //+1 to reserve index for hmd.
     if (settingsError == vr::VRSettingsError_UnsetSettingHasNoDefault) vr::VRSettings()->SetBool(settings_key_.c_str(), "controllers_as_trackers", true);
 
     //Add any other tracked objects there may be.
-    for (int i = 0; i < sharedBuffer->vrObjectsCount; i++) this->AddDevice(std::make_shared<TrackerDevice>("oculus_object" + std::to_string(i), OculusDeviceType::Object));
+    for (int i = 0; i < sharedBuffer->vrObjectsCount; i++) AddDevice(std::make_shared<TrackerDevice>(i + 2, OculusDeviceType::Object)); //+3 to reserve indexes for hmd and controllers.
 
     if (acquireLock) ReleaseMutex(sharedMutex);
 
@@ -195,13 +196,13 @@ void OculusToSteamVR::VRDriver::RunFrame()
     vr::VREvent_t event;
     std::vector<vr::VREvent_t> events;
     while (vr::VRServerDriverHost()->PollNextEvent(&event, sizeof(event))) events.push_back(event);
-    this->openvr_events_ = events;
+    openvr_events_ = events;
 
     //Update frame timing.
     std::chrono::system_clock::time_point now = std::chrono::system_clock::now();
-    this->frame_timing_ = std::chrono::duration_cast<std::chrono::milliseconds>(now - this->last_frame_time_);
-    this->last_frame_time_ = now;
-    this->slowLogTime += frame_timing_.count();
+    frame_timing_ = std::chrono::duration_cast<std::chrono::milliseconds>(now - last_frame_time_);
+    last_frame_time_ = now;
+    slowLogTime += frame_timing_.count();
 
     if (slowLogTime >= 5000)
     {
@@ -219,12 +220,12 @@ void OculusToSteamVR::VRDriver::RunFrame()
         if (!haveSetupDevices) SetupDevices(false);
 
         //Update devices.
-        for (auto& device : this->devices_) device->Update(sharedBuffer);
+        for (auto& device : devices_) device->Update(sharedBuffer);
     }
     else
     {
         //Mark the devices as offline.
-        for (auto& device : this->devices_)
+        for (auto& device : devices_)
         {
             auto pose = device->GetPose();
             pose.deviceIsConnected = false;
@@ -252,17 +253,17 @@ void OculusToSteamVR::VRDriver::LeaveStandby()
 
 std::vector<std::shared_ptr<OculusToSteamVR::IVRDevice>> OculusToSteamVR::VRDriver::GetDevices()
 {
-    return this->devices_;
+    return devices_;
 }
 
 std::vector<vr::VREvent_t> OculusToSteamVR::VRDriver::GetOpenVREvents()
 {
-    return this->openvr_events_;
+    return openvr_events_;
 }
 
 std::chrono::milliseconds OculusToSteamVR::VRDriver::GetLastFrameTime()
 {
-    return this->frame_timing_;
+    return frame_timing_;
 }
 
 bool OculusToSteamVR::VRDriver::AddDevice(std::shared_ptr<IVRDevice> device)
@@ -287,7 +288,7 @@ bool OculusToSteamVR::VRDriver::AddDevice(std::shared_ptr<IVRDevice> device)
             return false;
     }
     bool result = vr::VRServerDriverHost()->TrackedDeviceAdded(device->GetSerial().c_str(), openvr_device_class, device.get());
-    if(result) this->devices_.push_back(device);
+    if(result) devices_.push_back(device);
     return result;
 }
 

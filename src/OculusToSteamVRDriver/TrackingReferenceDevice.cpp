@@ -1,25 +1,25 @@
 #include "TrackingReferenceDevice.hpp"
 #include <Windows.h>
 
-OculusToSteamVR::TrackingReferenceDevice::TrackingReferenceDevice(std::string serial, unsigned int index):
-    serial_(serial),
-    index_(index)
+OculusToSteamVR::TrackingReferenceDevice::TrackingReferenceDevice(unsigned int index):
+    index(index)
 {
-    this->random_angle_rad_ = fmod(rand() / 10000.f, 2 * 3.14159f);
+    //OSC -> Oculus Steam Reference.
+    serial = "OSR-" + Helpers::GetSerialSuffix(index);
 }
 
 std::string OculusToSteamVR::TrackingReferenceDevice::GetSerial()
 {
-    return this->serial_;
+    return serial;
 }
 
 void OculusToSteamVR::TrackingReferenceDevice::Update(SharedData* sharedBuffer)
 {
-    if (this->device_index_ == vr::k_unTrackedDeviceIndexInvalid) return;
+    if (deviceIndex == vr::k_unTrackedDeviceIndexInvalid) return;
 
     // Setup pose for this frame
     //auto newPose = IVRDevice::MakeDefaultPose();
-    auto newPose = this->last_pose_;
+    auto newPose = lastPose;
     newPose.poseIsValid = true;
     newPose.result = vr::ETrackingResult::TrackingResult_Running_OK;
     newPose.qDriverFromHeadRotation = { 1, 0, 0, 0 };
@@ -28,8 +28,8 @@ void OculusToSteamVR::TrackingReferenceDevice::Update(SharedData* sharedBuffer)
     newPose.vecDriverFromHeadTranslation[0] = newPose.vecDriverFromHeadTranslation[1] = newPose.vecDriverFromHeadTranslation[2] = 0;
     newPose.poseTimeOffset = 0;
 
-    ovrPosef pose = sharedBuffer->trackingRefrences[this->index_].LeveledPose;
-    unsigned int flags = sharedBuffer->trackingRefrences[this->index_].TrackerFlags;
+    ovrPosef pose = sharedBuffer->trackingRefrences[index].LeveledPose;
+    unsigned int flags = sharedBuffer->trackingRefrences[index].TrackerFlags;
 
     newPose.vecPosition[0] = pose.Position.x;
     newPose.vecPosition[1] = pose.Position.y;
@@ -54,8 +54,8 @@ void OculusToSteamVR::TrackingReferenceDevice::Update(SharedData* sharedBuffer)
     }
 
     // Post pose
-    GetDriver()->GetDriverHost()->TrackedDevicePoseUpdated(this->device_index_, newPose, sizeof(vr::DriverPose_t));
-    this->last_pose_ = newPose;
+    GetDriver()->GetDriverHost()->TrackedDevicePoseUpdated(deviceIndex, newPose, sizeof(vr::DriverPose_t));
+    lastPose = newPose;
 }
 
 DeviceType OculusToSteamVR::TrackingReferenceDevice::GetDeviceType()
@@ -65,24 +65,24 @@ DeviceType OculusToSteamVR::TrackingReferenceDevice::GetDeviceType()
 
 vr::TrackedDeviceIndex_t OculusToSteamVR::TrackingReferenceDevice::GetDeviceIndex()
 {
-    return this->device_index_;
+    return deviceIndex;
 }
 
 vr::EVRInitError OculusToSteamVR::TrackingReferenceDevice::Activate(uint32_t unObjectId)
 {
-    this->device_index_ = unObjectId;
+    deviceIndex = unObjectId;
 
-    GetDriver()->Log("Activating tracking reference " + this->serial_);
+    GetDriver()->Log("Activating tracking reference " + serial);
 
     //Get the properties handle.
-    auto props = GetDriver()->GetProperties()->TrackedDeviceToPropertyContainer(this->device_index_);
+    auto props = GetDriver()->GetProperties()->TrackedDeviceToPropertyContainer(deviceIndex);
 
     //Set some universe ID (Must be 2 or higher).
     GetDriver()->GetProperties()->SetUint64Property(props, vr::Prop_CurrentUniverseId_Uint64, 31);
-    //vr::VRProperties()->SetStringProperty(props, vr::Prop_TrackingSystemName_String, "oculus");
+    GetDriver()->GetProperties()->SetStringProperty(props, vr::Prop_TrackingSystemName_String, "oculus");
 
     //Set up a model "number" (not needed but good to have).
-    GetDriver()->GetProperties()->SetStringProperty(props, vr::Prop_ModelNumber_String, "oculus_trackingreference");
+    GetDriver()->GetProperties()->SetStringProperty(props, vr::Prop_ModelNumber_String, (std::string("Oculus Sensor ") + std::to_string(index)).c_str());
 
     //Set up a render model path.
     GetDriver()->GetProperties()->SetStringProperty(props, vr::Prop_RenderModelName_String, "rift_camera");
@@ -97,12 +97,14 @@ vr::EVRInitError OculusToSteamVR::TrackingReferenceDevice::Activate(uint32_t unO
     GetDriver()->GetProperties()->SetStringProperty(props, vr::Prop_NamedIconPathDeviceStandby_String, "{oculus}/icons/cv1_camera_off.png");
     GetDriver()->GetProperties()->SetStringProperty(props, vr::Prop_NamedIconPathDeviceAlertLow_String, "{oculus}/icons/cv1_camera_ready_alert.png");
 
+    GetDriver()->GetProperties()->SetStringProperty(props, vr::Prop_SerialNumber_String, serial.c_str());
+
     return vr::EVRInitError::VRInitError_None;
 }
 
 void OculusToSteamVR::TrackingReferenceDevice::Deactivate()
 {
-    this->device_index_ = vr::k_unTrackedDeviceIndexInvalid;
+    deviceIndex = vr::k_unTrackedDeviceIndexInvalid;
 }
 
 void OculusToSteamVR::TrackingReferenceDevice::EnterStandby()
@@ -122,5 +124,5 @@ void OculusToSteamVR::TrackingReferenceDevice::DebugRequest(const char* pchReque
 
 vr::DriverPose_t OculusToSteamVR::TrackingReferenceDevice::GetPose()
 {
-    return last_pose_;
+    return lastPose;
 }
