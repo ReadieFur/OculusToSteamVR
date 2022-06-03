@@ -47,12 +47,15 @@ namespace OculusToSteamVR
         std::string settings_key_ = "driver_oculus_to_steamvr";
         SharedData* sharedBuffer;
         HANDLE sharedMutex;
+        STARTUPINFOA startupInfo; //For the client if we auto-launched it.
+        PROCESS_INFORMATION processInformation;
+        bool haveSetupDevices;
         long long slowLogTime;
         bool shouldSlowLog;
-        bool haveSetupDevices;
 
         virtual vr::EVRInitError InitSharedData();
         virtual bool IsClientAlive(std::chrono::steady_clock::time_point clientTime);
         virtual void SetupDevices(bool acquireLock);
+        virtual void LaunchClient();
     };
 };

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <OVR_CAPI.h>
+#include <codecvt>
 
 namespace OculusToSteamVR
 {
@@ -42,5 +43,57 @@ namespace OculusToSteamVR
 
 			return ovrVector3f{ v.x + uv.x + uuv.x, v.y + uv.y + uuv.y, v.z + uv.z + uuv.z };
 		}
+
+		//https://gist.github.com/pwm1234/05280cf2e462853e183d
+		static std::string GetModulePath(void* address = Foo)
+		{
+			char path[FILENAME_MAX];
+			HMODULE hm = NULL;
+
+			if (!GetModuleHandleExA(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS |
+				GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
+				(LPCSTR)address,
+				&hm))
+			{
+				throw std::runtime_error(std::string("GetModuleHandle returned " + GetLastError()));
+			}
+			GetModuleFileNameA(hm, path, sizeof(path));
+
+			std::string p = path;
+			return p;
+		}
+
+		static std::string GetParentDirectory(std::string path)
+		{
+			return path.substr(0, path.find_last_of("\\"));
+		}
+
+		//Returns the last Win32 error, in string format. Returns an empty string if there is no error.
+		static std::string GetLastErrorAsString()
+		{
+			//Get the error message ID, if any.
+			DWORD errorMessageID = ::GetLastError();
+			if (errorMessageID == 0) {
+				return std::string(); //No error message has been recorded
+			}
+
+			LPSTR messageBuffer = nullptr;
+
+			//Ask Win32 to give us the string version of that message ID.
+			//The parameters we pass in, tell Win32 to create the buffer that holds the message for us (because we don't yet know how long the message string will be).
+			size_t size = FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+				NULL, errorMessageID, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPSTR)&messageBuffer, 0, NULL);
+
+			//Copy the error message into a std::string.
+			std::string message(messageBuffer, size);
+
+			//Free the Win32's string's buffer.
+			LocalFree(messageBuffer);
+
+			return message;
+		}
+
+	private:
+		static void Foo(){}
 	};
 }

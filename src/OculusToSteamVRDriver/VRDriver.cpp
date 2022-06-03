@@ -117,6 +117,43 @@ void OculusToSteamVR::VRDriver::SetupDevices(bool acquireLock)
     Log("Devices Setup.");
 }
 
+void OculusToSteamVR::VRDriver::LaunchClient()
+{
+    //https://stackoverflow.com/questions/15435994/how-do-i-open-an-exe-from-another-c-exe
+    std::thread([this]()
+    {
+        //Set the size of the structures.
+        ZeroMemory(&startupInfo, sizeof(startupInfo));
+        startupInfo.cb = sizeof(startupInfo);
+        ZeroMemory(&processInformation, sizeof(processInformation));
+
+        //This assumes that OculusToSteamVRClient.exe is in ..\.. from this dll which is usually located in bin\win64.
+        std::string addonPath = Helpers::GetParentDirectory(Helpers::GetParentDirectory(Helpers::GetParentDirectory(Helpers::GetModulePath())));
+
+        //Start the program up.
+        if (!CreateProcessA((addonPath + "\\OculusToSteamVRClient.exe").c_str(), //Name of program to execute.
+            NULL, //Command line.
+            NULL, //Process handle not inheritable.
+            NULL, //Thread handle not inheritable.
+            FALSE, //Set handle inheritance to FALSE.
+            0, //No creation flags.
+            NULL, //Use parent's environment block.
+            NULL, //Use parent's starting directory.
+            &startupInfo, //Pointer to STARTUPINFO structure.
+            &processInformation) //Pointer to PROCESS_INFORMATION structure.
+            ) GetDriver()->Log("Couldn't launch client autmoatically.");
+        else
+        {
+            //Wait until child process exits.
+            WaitForSingleObject(processInformation.hProcess, INFINITE);
+            DWORD exitCode = 0;
+            GetExitCodeProcess(processInformation.hProcess, &exitCode);
+            GetDriver()->Log((std::string("Client exited prematurely with code: ") + std::to_string(exitCode)).c_str());
+            Cleanup();
+        }
+    }).detach();
+}
+
 vr::EVRInitError OculusToSteamVR::VRDriver::Init(vr::IVRDriverContext* pDriverContext)
 {
     // Perform driver context initialisation
@@ -134,6 +171,7 @@ vr::EVRInitError OculusToSteamVR::VRDriver::Init(vr::IVRDriverContext* pDriverCo
         return vr::VRInitError_IPC_ConnectFailedAfterMultipleAttempts;
     }
     if (IsClientAlive(sharedBuffer->clientTime)) SetupDevices(false);
+    else LaunchClient();
     ReleaseMutex(sharedMutex);
 
     Log("OculusToSteamVR Loaded Successfully.");
@@ -143,6 +181,11 @@ vr::EVRInitError OculusToSteamVR::VRDriver::Init(vr::IVRDriverContext* pDriverCo
 
 void OculusToSteamVR::VRDriver::Cleanup()
 {
+    if (processInformation.hProcess != NULL)
+    {
+        CloseHandle(processInformation.hProcess);
+        CloseHandle(processInformation.hThread);
+    }
 }
 
 //The code in here (now moved to the individual device files) isn't all that efficient but I will work on improving that later.
