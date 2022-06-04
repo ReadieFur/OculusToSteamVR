@@ -102,16 +102,15 @@ void OculusToSteamVR::VRDriver::SetupDevices(bool acquireLock)
     if (settingsError == vr::VRSettingsError_UnsetSettingHasNoDefault) vr::VRSettings()->SetBool(settings_key_.c_str(), "track_hmd", false);
 
     //Add the controllers as trackers (if specified).
-    //This isn't a mess :).
     if (vr::VRSettings()->GetBool(settings_key_.c_str(), "controllers_as_trackers", &settingsError))
         for (int i = 0; i < 2; i++) AddDevice(std::make_shared<TrackerDevice>(i, i == 0 ? OculusDeviceType::ControllerLeft : OculusDeviceType::ControllerRight));
     else
         for (int i = 0; i < 2; i++)
-            AddDevice(std::make_shared<ControllerDevice>(i + 1, i == 0 ? ControllerDevice::Handedness::LEFT : ControllerDevice::Handedness::RIGHT)); //+1 to reserve index for hmd.
+            AddDevice(std::make_shared<ControllerDevice>(i, i == 0 ? ControllerDevice::Handedness::LEFT : ControllerDevice::Handedness::RIGHT));
     if (settingsError == vr::VRSettingsError_UnsetSettingHasNoDefault) vr::VRSettings()->SetBool(settings_key_.c_str(), "controllers_as_trackers", true);
 
     //Add any other tracked objects there may be.
-    for (int i = 0; i < sharedBuffer->vrObjectsCount; i++) AddDevice(std::make_shared<TrackerDevice>(i + 2, OculusDeviceType::Object)); //+3 to reserve indexes for hmd and controllers.
+    for (int i = 0; i < sharedBuffer->vrObjectsCount; i++) AddDevice(std::make_shared<TrackerDevice>(i, OculusDeviceType::Object));
 
     if (acquireLock) ReleaseMutex(sharedMutex);
 
