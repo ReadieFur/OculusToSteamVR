@@ -49,8 +49,6 @@ void OculusToSteamVR::ControllerDevice::Update(SharedData* sharedBuffer)
     newPose.result = vr::ETrackingResult::TrackingResult_Running_OK;
     newPose.qDriverFromHeadRotation = { 1, 0, 0, 0 };
     newPose.qWorldFromDriverRotation = { 1, 0, 0, 0 };
-    newPose.vecWorldFromDriverTranslation[0] = newPose.vecWorldFromDriverTranslation[1] = newPose.vecWorldFromDriverTranslation[2] = 0;
-    newPose.vecDriverFromHeadTranslation[0] = newPose.vecDriverFromHeadTranslation[1] = newPose.vecDriverFromHeadTranslation[2] = 0;
     newPose.poseTimeOffset = 0;
 
     ovrPoseStatef pose = sharedBuffer->oTrackingState.HandPoses[oHandType];
