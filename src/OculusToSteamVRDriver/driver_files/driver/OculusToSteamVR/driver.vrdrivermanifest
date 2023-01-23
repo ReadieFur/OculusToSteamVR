@@ -1,0 +1,8 @@
+{
+	"alwaysActivate": true,
+	"name" : "OculusToSteamVR",
+	"directory" : "",
+	"resourceOnly" : false,
+	"prefersUpperDeviceIndices" :  true,
+	"hmd_presence" : ["*.*"]
+}

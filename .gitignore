@@ -432,3 +432,4 @@ FodyWeavers.xsd
 
 #User defined
 *.lnk
+assets/Thumbs.db
