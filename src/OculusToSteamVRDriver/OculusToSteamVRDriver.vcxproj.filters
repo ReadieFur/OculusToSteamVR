@@ -15,34 +15,39 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="DataSender.h">
+    <ClCompile Include="Entrypoint.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Driver.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="DataReceiver.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="VRTracker.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Entrypoint.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="GuardianSystemDemo.h">
+    <ClInclude Include="Driver.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="OculusToSteamVRClient.h">
+    <ClInclude Include="DataReceiver.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="SOculusData.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Win32_DirectXAppUtil.h">
+    <ClInclude Include="VRTracker.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="DataSender.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="GuardianSystemDemo.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="OculusToSteamVRClient.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Program.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
+    <None Include="driver.vrdrivermanifest">
+      <Filter>Resource Files</Filter>
+    </None>
   </ItemGroup>
 </Project>
