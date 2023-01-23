@@ -1,3 +1,0 @@
-O:/GitHub/ReadieFur/OculusToSteamVR/src/OculusToSteamVRDriver/CMakeFiles/driver_oculus_to_steamvr.dir
-O:/GitHub/ReadieFur/OculusToSteamVR/src/OculusToSteamVRDriver/CMakeFiles/ALL_BUILD.dir
-O:/GitHub/ReadieFur/OculusToSteamVR/src/OculusToSteamVRDriver/CMakeFiles/ZERO_CHECK.dir
