@@ -44,6 +44,9 @@
     <ClInclude Include="VRTracker.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="IVRDevice.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="driver.vrdrivermanifest">

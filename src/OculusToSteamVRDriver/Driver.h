@@ -3,8 +3,10 @@
 #include <openvr_driver.h>
 #include <memory>
 #include <chrono>
+#include <vector>
 #include "DataReceiver.h"
 #include "SOculusData.h"
+#include "IVRDevice.h"
 
 namespace OculusToSteamVR_Driver
 {
@@ -21,7 +23,10 @@ namespace OculusToSteamVR_Driver
         virtual void LeaveStandby() override {}
 #pragma endregion
 
+        bool AddDevice(std::shared_ptr<IVRDevice> device);
+
     private:
+        std::vector<std::shared_ptr<IVRDevice>> devices;
         DataReceiver* dataReceiver = nullptr;
         SOculusData lastOculusData;
 	};

@@ -1,7 +1,11 @@
 #include "Driver.h"
 
+#include "VRTracker.h"
+
+#if false
 #ifdef _DEBUG
 #include <Windows.h>
+#endif
 #endif
 
 vr::EVRInitError OculusToSteamVR_Driver::Driver::Init(vr::IVRDriverContext* pDriverContext)
@@ -17,6 +21,11 @@ vr::EVRInitError OculusToSteamVR_Driver::Driver::Init(vr::IVRDriverContext* pDri
 	dataReceiver = new DataReceiver(1549); //O(15) D(4) S(19) - OculusDataStreamer.
 	if (!dataReceiver->WasInitSuccess())
 		return vr::VRInitError_IPC_Failed;
+
+	//The following devices will always (or should always) be present.
+	//AddDevice(std::make_shared<VRTracker>(0)); //HMD (0).
+	AddDevice(std::make_shared<VRTracker>(1)); //Left hand (1).
+	//AddDevice(std::make_shared<VRTracker>(2)); //Right hand (2).
 
 	return vr::VRInitError_None;
 }
@@ -38,4 +47,12 @@ void OculusToSteamVR_Driver::Driver::RunFrame()
 	SOculusData oculusData = dataReceiver->TryGetData(1000 / 160, &oculusDataTimedOut);
 	if (oculusDataTimedOut)
 		return;
+}
+
+bool OculusToSteamVR_Driver::Driver::AddDevice(std::shared_ptr<IVRDevice> device)
+{
+    bool result = vr::VRServerDriverHost()->TrackedDeviceAdded(device->GetSerial().c_str(), device->GetDeviceType(), device.get());
+    if (result)
+        this->devices.push_back(device);
+    return result;
 }

@@ -151,6 +151,7 @@ copy /Y "$(ProjectDir)driver.vrdrivermanifest" "$(OutputPath)$(ProjectName)\driv
     <ClInclude Include="DataReceiver.h" />
     <ClInclude Include="Entrypoint.h" />
     <ClInclude Include="Driver.h" />
+    <ClInclude Include="IVRDevice.h" />
     <ClInclude Include="SOculusData.h" />
     <ClInclude Include="VRTracker.h" />
   </ItemGroup>
