@@ -18,6 +18,10 @@ vr::EVRInitError OculusToSteamVR_Driver::Driver::Init(vr::IVRDriverContext* pDri
 #endif
 #endif
 
+	vr::EVRInitError init_error = vr::InitServerDriverContext(pDriverContext);
+	if (init_error != vr::EVRInitError::VRInitError_None)
+		return init_error;
+
 	dataReceiver = new DataReceiver(1549); //O(15) D(4) S(19) - OculusDataStreamer.
 	if (!dataReceiver->WasInitSuccess())
 		return vr::VRInitError_IPC_Failed;
@@ -25,7 +29,7 @@ vr::EVRInitError OculusToSteamVR_Driver::Driver::Init(vr::IVRDriverContext* pDri
 	//The following devices will always (or should always) be present.
 	//AddDevice(std::make_shared<VRTracker>(0)); //HMD (0).
 	AddDevice(std::make_shared<VRTracker>(1)); //Left hand (1).
-	//AddDevice(std::make_shared<VRTracker>(2)); //Right hand (2).
+	AddDevice(std::make_shared<VRTracker>(2)); //Right hand (2).
 
 	return vr::VRInitError_None;
 }
