@@ -24,9 +24,6 @@
     <ClInclude Include="OculusToSteamVRClient.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="SOculusData.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Win32_DirectXAppUtil.h">
       <Filter>Header Files</Filter>
     </ClInclude>

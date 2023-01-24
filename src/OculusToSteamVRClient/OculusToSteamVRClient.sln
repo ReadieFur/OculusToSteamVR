@@ -5,6 +5,8 @@ VisualStudioVersion = 17.4.33110.190
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "OculusToSteamVRClient", "OculusToSteamVRClient.vcxproj", "{A3142386-356C-4EE5-A4F8-78DC1BD2E099}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "OculusToSteamVRShared", "..\OculusToSteamVRShared\OculusToSteamVRShared.vcxitems", "{A9E7B638-899F-4EEC-B882-07BE9B48A514}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -27,5 +29,9 @@ Global
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {22B773A4-0DBE-48AB-A66A-F1BD9F8D35B7}
+	EndGlobalSection
+	GlobalSection(SharedMSBuildProjectFiles) = preSolution
+		..\OculusToSteamVRShared\OculusToSteamVRShared.vcxitems*{a3142386-356c-4ee5-a4f8-78dc1bd2e099}*SharedItemsImports = 4
+		..\OculusToSteamVRShared\OculusToSteamVRShared.vcxitems*{a9e7b638-899f-4eec-b882-07be9b48a514}*SharedItemsImports = 9
 	EndGlobalSection
 EndGlobal

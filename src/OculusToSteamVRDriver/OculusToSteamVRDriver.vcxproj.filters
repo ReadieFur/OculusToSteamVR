@@ -38,9 +38,6 @@
     <ClInclude Include="DataReceiver.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="SOculusData.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="VRTracker.h">
       <Filter>Header Files</Filter>
     </ClInclude>

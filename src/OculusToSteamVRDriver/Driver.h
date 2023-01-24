@@ -4,9 +4,13 @@
 #include <memory>
 #include <chrono>
 #include <vector>
+#include <type_traits>
 #include "DataReceiver.h"
+#include "SharedVRProperties.h"
 #include "SOculusData.h"
 #include "IVRDevice.h"
+#include "VRSensor.h"
+#include "VRTracker.h"
 
 namespace OculusToSteamVR_Driver
 {
@@ -29,5 +33,16 @@ namespace OculusToSteamVR_Driver
         std::vector<std::shared_ptr<IVRDevice>> devices;
         DataReceiver* dataReceiver = nullptr;
         SOculusData lastOculusData;
+
+		template<typename T>
+        typename std::enable_if<std::is_base_of<OculusToSteamVR_Driver::IVRDevice, T>::value>::type
+        RefreshDevices(unsigned int lastDeviceCount, unsigned int deviceCount, unsigned int indexOffset);
+
+#ifdef _DEBUG
+        uint64_t frameCount = 0;
+        
+        void DebugLog();
+        std::string LogPose(const char* prefix, ovrPosef pose);
+#endif
 	};
 }

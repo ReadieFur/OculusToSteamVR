@@ -56,6 +56,7 @@
   <ImportGroup Label="ExtensionSettings">
   </ImportGroup>
   <ImportGroup Label="Shared">
+    <Import Project="..\OculusToSteamVRShared\OculusToSteamVRShared.vcxitems" Label="Shared" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
@@ -145,6 +146,8 @@ copy /Y "$(ProjectDir)driver.vrdrivermanifest" "$(OutputPath)$(ProjectName)\driv
     <ClCompile Include="DataReceiver.cpp" />
     <ClCompile Include="Entrypoint.cpp" />
     <ClCompile Include="Driver.cpp" />
+    <ClCompile Include="SharedVRProperties.cpp" />
+    <ClCompile Include="VRSensor.cpp" />
     <ClCompile Include="VRTracker.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -152,7 +155,8 @@ copy /Y "$(ProjectDir)driver.vrdrivermanifest" "$(OutputPath)$(ProjectName)\driv
     <ClInclude Include="Entrypoint.h" />
     <ClInclude Include="Driver.h" />
     <ClInclude Include="IVRDevice.h" />
-    <ClInclude Include="SOculusData.h" />
+    <ClInclude Include="SharedVRProperties.h" />
+    <ClInclude Include="VRSensor.h" />
     <ClInclude Include="VRTracker.h" />
   </ItemGroup>
   <ItemGroup>

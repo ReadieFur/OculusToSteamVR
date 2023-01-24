@@ -1,19 +1,22 @@
 #include "VRTracker.h"
 
-#include "Entrypoint.h"
+#include "SharedVRProperties.h"
 
-OculusToSteamVR_Driver::VRTracker::VRTracker(unsigned int objectIndex)
+OculusToSteamVR_Driver::VRTracker::VRTracker(unsigned int ovrObjectIndex)
 {
-	objectID = objectIndex;
-	serialNumber = "ODT-0000000" + std::to_string(objectIndex + 5);
-	modelNumber = "Oculus Rift CV1 Tracker " + std::to_string(objectIndex);
+    ovrTrackerOffset = ovrObjectIndex - OBJECTS_OFFSET;
+	serialNumber = "ODT-0000000" + std::to_string(ovrObjectIndex + 5);
+	modelNumber = "Oculus Rift CV1 Tracker " + std::to_string(ovrObjectIndex);
 }
 
-vr::EVRInitError OculusToSteamVR_Driver::VRTracker::Activate(uint32_t objectId)
+vr::EVRInitError OculusToSteamVR_Driver::VRTracker::Activate(uint32_t objectID)
 {
-    vr::PropertyContainerHandle_t properties = vr::VRProperties()->TrackedDeviceToPropertyContainer(objectId);
+	this->objectID = objectID;
+    
+    vr::PropertyContainerHandle_t properties = vr::VRProperties()->TrackedDeviceToPropertyContainer(objectID);
 
-    vr::VRProperties()->SetStringProperty(properties, vr::Prop_TrackingSystemName_String, "lighthouse");
+    SharedVRProperties::SetCommonProperties(properties, modelNumber, serialNumber);
+
     vr::VRProperties()->SetStringProperty(properties, vr::Prop_RenderModelName_String, "{htc}vr_tracker_vive_1_0");
     vr::VRProperties()->SetStringProperty(properties, vr::Prop_ModelNumber_String, "Vive Tracker Pro MV");
     vr::VRProperties()->SetStringProperty(properties, vr::Prop_ManufacturerName_String, "HTC");
@@ -25,9 +28,6 @@ vr::EVRInitError OculusToSteamVR_Driver::VRTracker::Activate(uint32_t objectId)
     vr::VRProperties()->SetStringProperty(properties, vr::Prop_InputProfilePath_String, "{htc}/input/vive_tracker_profile.json");
     vr::VRProperties()->SetInt32Property(properties, vr::Prop_ControllerRoleHint_Int32, vr::TrackedControllerRole_Invalid);
     vr::VRProperties()->SetStringProperty(properties, vr::Prop_ControllerType_String, "vive_tracker");
-
-    //vr::VRProperties()->SetStringProperty(properties, vr::Prop_ModelNumber_String, m_sModelNumber.c_str()); //Not sure if this is needed.
-    //vr::VRProperties()->SetStringProperty(properties, vr::Prop_SerialNumber_String, m_sSerialNumber.c_str());
 
     vr::VRProperties()->SetStringProperty(properties, vr::Prop_NamedIconPathDeviceOff_String, "{htc}/icons/tracker_status_off.png");
     vr::VRProperties()->SetStringProperty(properties, vr::Prop_NamedIconPathDeviceSearching_String, "{htc}/icons/tracker_status_searching.gif");
@@ -43,7 +43,100 @@ vr::EVRInitError OculusToSteamVR_Driver::VRTracker::Activate(uint32_t objectId)
     vr::VRProperties()->SetBoolProperty(properties, vr::Prop_HasDriverDirectModeComponent_Bool, false);
     vr::VRProperties()->SetBoolProperty(properties, vr::Prop_HasVirtualDisplayComponent_Bool, false);
 
-    vr::VRProperties()->SetUint64Property(properties, vr::Prop_CurrentUniverseId_Uint64, 31);
+    enabled = true;
 
     return vr::VRInitError_None;
+}
+
+void OculusToSteamVR_Driver::VRTracker::RunFrame(SOculusData* oculusData)
+{
+    if (!enabled || objectID == vr::k_unTrackedDeviceIndexInvalid)
+        return;
+
+    vr::DriverPose_t pose = { 0 };
+    pose.deviceIsConnected = true;
+
+    ovrPoseStatef ovrPose;
+    if (useOVRControllerData)
+    {
+        ovrPose = oculusData->trackingState.HandPoses[ovrTrackerOffset];
+
+        //Flags:
+        //pos tracked and pos valid and rot tracked and rot valid -> running ok
+        //pos not tracked and pos valid -> running out of range
+		//rot not tracked and rot valid -> fallback rotation only
+        //else -> out of range
+        if (oculusData->trackingState.HandStatusFlags[ovrTrackerOffset] & (
+            ovrStatusBits::ovrStatus_PositionTracked
+            | ovrStatusBits::ovrStatus_PositionValid
+            | ovrStatusBits::ovrStatus_OrientationTracked
+            | ovrStatusBits::ovrStatus_OrientationValid))
+        {
+            pose.poseIsValid = true;
+            pose.result = vr::TrackingResult_Running_OK;
+        }
+        else if (oculusData->trackingState.HandStatusFlags[ovrTrackerOffset] & ovrStatusBits::ovrStatus_PositionValid)
+        {
+			pose.poseIsValid = true;
+			pose.result = vr::TrackingResult_Running_OutOfRange;
+		}
+		else if (oculusData->trackingState.HandStatusFlags[ovrTrackerOffset] & ovrStatusBits::ovrStatus_OrientationValid)
+		{
+			pose.poseIsValid = true;
+			pose.result = vr::TrackingResult_Fallback_RotationOnly;
+        }
+        else
+        {
+			pose.poseIsValid = false;
+            pose.result = vr::TrackingResult_Calibrating_OutOfRange;
+        }
+    }
+    else
+    {
+		ovrPose = oculusData->objectPoses[ovrTrackerOffset];
+
+        pose.poseIsValid = true;
+		pose.result = vr::TrackingResult_Running_OK;
+    }
+
+	pose.qRotation.w = ovrPose.ThePose.Orientation.w;
+	pose.qRotation.x = ovrPose.ThePose.Orientation.x;
+	pose.qRotation.y = ovrPose.ThePose.Orientation.y;
+	pose.qRotation.z = ovrPose.ThePose.Orientation.z;
+
+	pose.vecPosition[0] = ovrPose.ThePose.Position.x;
+	pose.vecPosition[1] = ovrPose.ThePose.Position.y;
+	pose.vecPosition[2] = ovrPose.ThePose.Position.z;
+
+	pose.vecAcceleration[0] = ovrPose.LinearAcceleration.x;
+	pose.vecAcceleration[1] = ovrPose.LinearAcceleration.y;
+	pose.vecAcceleration[2] = ovrPose.LinearAcceleration.z;
+
+	pose.qWorldFromDriverRotation.w = 1;
+	pose.qWorldFromDriverRotation.x = 0;
+	pose.qWorldFromDriverRotation.y = 0;
+	pose.qWorldFromDriverRotation.z = 0;
+
+	pose.qDriverFromHeadRotation.w = 1;
+	pose.qDriverFromHeadRotation.x = 0;
+	pose.qDriverFromHeadRotation.y = 0;
+	pose.qDriverFromHeadRotation.z = 0;
+
+	pose.poseTimeOffset = 0; //Let's let Oculus do it.
+
+	pose.vecAngularAcceleration[0] = ovrPose.AngularAcceleration.x;
+	pose.vecAngularAcceleration[1] = ovrPose.AngularAcceleration.y;
+	pose.vecAngularAcceleration[2] = ovrPose.AngularAcceleration.z;
+
+	pose.vecAngularVelocity[0] = ovrPose.AngularVelocity.x;
+	pose.vecAngularVelocity[1] = ovrPose.AngularVelocity.y;
+	pose.vecAngularVelocity[2] = ovrPose.AngularVelocity.z;
+
+    vr::VRServerDriverHost()->TrackedDevicePoseUpdated(objectID, pose, sizeof(vr::DriverPose_t));
+    lastPose = pose;
+}
+
+void OculusToSteamVR_Driver::VRTracker::UseOVRControllerData(bool useOVRControllerData)
+{
+    this->useOVRControllerData = useOVRControllerData;
 }
