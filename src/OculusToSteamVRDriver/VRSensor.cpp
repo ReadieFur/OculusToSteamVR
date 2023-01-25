@@ -41,6 +41,9 @@ void OculusToSteamVR_Driver::VRSensor::RunFrame(SOculusData* oculusData)
         return;
 
 	vr::DriverPose_t pose = { 0 };
+	pose.willDriftInYaw = false;
+	pose.shouldApplyHeadModel = false;
+
 	ovrTrackerPose ovrPose = oculusData->sensorData[ovrSensorOffset];
     
     pose.deviceIsConnected = ((ovrPose.TrackerFlags & ovrTrackerFlags::ovrTracker_Connected) == ovrTrackerFlags::ovrTracker_Connected);
