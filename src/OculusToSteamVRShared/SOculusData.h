@@ -2,6 +2,7 @@
 
 #include <OVR_CAPI_D3D.h> //Oculus SDK.
 
+#define UDP_SEND_RATE 90
 #define MAX_OVR_SENSORS 4
 #define MAX_OVR_OBJECTS 4
 

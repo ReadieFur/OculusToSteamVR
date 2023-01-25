@@ -11,16 +11,14 @@ namespace OculusToSteamVR_Driver
 	{
 	public:
 #pragma region IVRDevice
-		VRTracker(unsigned int ovrObjectIndex);
+		VRTracker(unsigned int objectIndex);
 		virtual vr::EVRInitError Activate(uint32_t objectId) override;
 		virtual vr::ETrackedDeviceClass GetDeviceType() override { return vr::ETrackedDeviceClass::TrackedDeviceClass_GenericTracker; }
 		virtual void RunFrame(SOculusData* oculusData) override;
 #pragma endregion
 
-		void UseOVRControllerData(bool useOVRControllerData);
-
 	private:
-		bool useOVRControllerData = false;
+		bool useOVRControllerData;
 		unsigned int ovrTrackerOffset;
     };
 }

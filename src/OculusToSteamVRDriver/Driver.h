@@ -39,8 +39,9 @@ namespace OculusToSteamVR_Driver
         RefreshDevices(unsigned int lastDeviceCount, unsigned int deviceCount, unsigned int indexOffset);
 
 #ifdef _DEBUG
-        uint64_t frameCount = 0;
-        
+        static const std::chrono::duration<double> LOG_INTERVAL;
+        std::chrono::steady_clock::time_point lastLogTime = std::chrono::steady_clock::now();
+
         void DebugLog();
         std::string LogPose(const char* prefix, ovrPosef pose);
 #endif

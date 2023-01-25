@@ -10,13 +10,21 @@
 #include "GuardianSystemDemo.h"
 #include "SOculusData.h"
 
-const std::chrono::duration<double> OculusToSteamVRClient::FRAME_DURATION = std::chrono::duration<double>(1.0 / 90.0);
+#define FRAME_RATE 90
+
+const std::chrono::duration<double> OculusToSteamVRClient::FRAME_INTERVAL = std::chrono::milliseconds(1000 / FRAME_RATE);
+const std::chrono::duration<double> OculusToSteamVRClient::UDP_INTERVAL = std::chrono::milliseconds(1000 / UDP_SEND_RATE);
+const std::chrono::duration<double> OculusToSteamVRClient::LOG_INTERVAL = std::chrono::seconds(5);
 
 bool OculusToSteamVRClient::initialized = FALSE;
-int OculusToSteamVRClient::udpSendRate = 90;
 float OculusToSteamVRClient::addedPredictionTimeMS = 10.0f;
+//I was having problems trying to use <std::chrono::steady_clock::time_point::min()> and I wasn't bothered to figure out why.
+std::chrono::steady_clock::time_point OculusToSteamVRClient::lastSendTime = std::chrono::high_resolution_clock::now();
+std::chrono::steady_clock::time_point OculusToSteamVRClient::lastLogTime = std::chrono::high_resolution_clock::now();
 DataSender* OculusToSteamVRClient::dataSender = nullptr;
 
+//TODO: Possibly restart the client every 5 minutes to refresh oculus, as if the HMD isn't moved for 5 minutes, oculus will stop tracking.
+//However I think when you start up an app (or OVR session, this timeout is reset, so perhaps if I can restart the OVR session every 5 minutes I can work around that timeout).
 void OculusToSteamVRClient::Main(int argc, char** argsv)
 {
     if (initialized)
@@ -28,14 +36,13 @@ void OculusToSteamVRClient::Main(int argc, char** argsv)
     if (argc == 5)
     {
         render = (std::string(argsv[1]) == "y");
-		udpSendRate = std::stoi(argsv[2]);
-		addedPredictionTimeMS = std::stof(argsv[3]);
-		udpPort = std::stoi(argsv[4]);
+		addedPredictionTimeMS = std::stof(argsv[2]);
+		udpPort = std::stoi(argsv[3]);
     }
 
 	dataSender = new DataSender(udpPort);
 
-    //Currently broken, not a priority to fix as of now.
+    //Currently broken, not a priority to fix as of now. The only reason I could think that you would want to do this is to possibly reduce system load by rendering "nothing"?
     if (render)
     {
         GuardianSystemDemo* instance = new(_aligned_malloc(sizeof(GuardianSystemDemo), 16)) GuardianSystemDemo();
@@ -93,8 +100,8 @@ void OculusToSteamVRClient::NoGraphicsStart(std::function<bool(ovrSession, uint6
 
 		//Wait (if needed) before starting the next frame.
 		std::chrono::duration<double> frameTime = std::chrono::high_resolution_clock::now() - frameStartTime;
-		if (frameTime < FRAME_DURATION)
-			std::this_thread::sleep_for(FRAME_DURATION - frameTime);
+		if (frameTime < FRAME_INTERVAL)
+			std::this_thread::sleep_for(FRAME_INTERVAL - frameTime);
 
         //Increment the frame counter.
         frameCount++;
@@ -106,9 +113,12 @@ void OculusToSteamVRClient::NoGraphicsStart(std::function<bool(ovrSession, uint6
 
 bool OculusToSteamVRClient::MainLoopCallback(ovrSession mSession, uint64_t frameCount)
 {
-	//Limit to running at the specified udpSendRate.
-	if (frameCount % (90 / udpSendRate) != 0)
-		return TRUE;
+	//Limit to running at the specified UDP_SEND_RATE.
+    /*if (frameCount % (1000 / UDP_SEND_RATE) != 0)
+        return TRUE;*/
+    //Switched to using time as it is more reliable.
+    if ((std::chrono::high_resolution_clock::now() - lastSendTime) < UDP_INTERVAL)
+        return TRUE;
 
 	SOculusData oculusData;
 
@@ -177,13 +187,11 @@ bool OculusToSteamVRClient::MainLoopCallback(ovrSession mSession, uint64_t frame
 
 #pragma region Send UDP data
     dataSender->SendData(&oculusData);
+    lastSendTime = std::chrono::high_resolution_clock::now();
 #pragma endregion
 
 #pragma region Logging
-    //This won't always log on the given interval due to my return statment above
-    //that only updates on the specified udpSendRate value.
-    //Log every 5 seconds (90fps * 5 = 450).
-    if (frameCount % 450 == 0)
+    if (std::chrono::high_resolution_clock::now() - lastLogTime >= LOG_INTERVAL)
     {
         //Sensors.
         for (int i = 0; i < oculusData.sensorCount; i++)
@@ -240,6 +248,8 @@ bool OculusToSteamVRClient::MainLoopCallback(ovrSession mSession, uint64_t frame
         }
 
         std::cout << std::endl;
+
+        lastLogTime = std::chrono::high_resolution_clock::now();
     }
 #pragma endregion
 

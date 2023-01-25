@@ -35,7 +35,7 @@ OculusToSteamVR_Driver::DataReceiver::DataReceiver(int port)
 	}
 
 	//Set a timeout for recvfrom.
-	int recvTimeout = 1000 / interval;
+	int recvTimeout = 1000 / UDP_SEND_RATE;
 	result = setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, (char*)&recvTimeout, sizeof(recvTimeout));
 	if (result == SOCKET_ERROR)
 	{
@@ -71,28 +71,32 @@ SOculusData OculusToSteamVR_Driver::DataReceiver::TryGetData(int timeoutMS, bool
 
 void OculusToSteamVR_Driver::DataReceiver::UDPLoop()
 {
-	std::chrono::steady_clock::time_point lastIterationStartTime = std::chrono::steady_clock::time_point::min();
+	std::chrono::duration<double> UDP_INTERVAL = std::chrono::milliseconds(1000 / UDP_SEND_RATE);
+	std::chrono::steady_clock::time_point lastIterationReceiveTime = std::chrono::high_resolution_clock::now();
 
 	while (!dispose)
 	{
 		//Wait (if needed) before starting the next iteration.
-		std::chrono::duration<double> iterationTime = std::chrono::high_resolution_clock::now() - lastIterationStartTime;
-		if (iterationTime.count() < 1.0 / interval)
-			std::this_thread::sleep_for(std::chrono::milliseconds((int)(1000.0 / interval - iterationTime.count() * 1000.0)));
-		lastIterationStartTime = std::chrono::high_resolution_clock::now();
+		std::chrono::duration<double> iterationTime = std::chrono::high_resolution_clock::now() - lastIterationReceiveTime;
+		if (iterationTime < UDP_INTERVAL)
+			std::this_thread::sleep_for(UDP_INTERVAL - iterationTime);
 
 		SOculusData data;
 		int result = recvfrom(sock, (char*)&data, sizeof(data), 0, NULL, NULL);
 		if (result == SOCKET_ERROR)
 		{
 			connected = false;
+			//I want to update the lastIterationReceiveTime here so that
+			//we don't get stuck in a 0 wait loop if the connection is closed.
+			lastIterationReceiveTime = std::chrono::high_resolution_clock::now();
 			continue;
 		}
 		//This should ideally be inside of the mutex lock too.
 		connected = true;
 
-		if (!mutex.try_lock_for(std::chrono::milliseconds(1000 / interval)))
+		if (!mutex.try_lock_for(UDP_INTERVAL))
 			continue;
+		lastIterationReceiveTime = std::chrono::high_resolution_clock::now();
 		oculusData = data;
 		mutex.unlock();
 	}

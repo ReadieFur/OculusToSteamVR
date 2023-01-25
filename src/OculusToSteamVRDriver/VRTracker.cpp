@@ -2,11 +2,22 @@
 
 #include "SharedVRProperties.h"
 
-OculusToSteamVR_Driver::VRTracker::VRTracker(unsigned int ovrObjectIndex)
+OculusToSteamVR_Driver::VRTracker::VRTracker(unsigned int objectIndex)
 {
-    ovrTrackerOffset = ovrObjectIndex - OBJECTS_OFFSET;
-	serialNumber = "ODT-0000000" + std::to_string(ovrObjectIndex + 5);
-	modelNumber = "Oculus Rift CV1 Tracker " + std::to_string(ovrObjectIndex);
+    //TODO: Impliment the headset as a tracker.
+    //If the <objectIndex> is less than the <OBJECTS_OFFSET> then we are using the controllers.
+    if (objectIndex < OBJECTS_OFFSET)
+    {
+        useOVRControllerData = true;
+        ovrTrackerOffset = objectIndex - (CONTROLLERS_OFFSET);
+    }
+    else
+    {
+        useOVRControllerData = false;
+        ovrTrackerOffset = objectIndex - (OBJECTS_OFFSET);
+    }
+	serialNumber = "ORT-0000000" + std::to_string(objectIndex + 5);
+	modelNumber = "Oculus Rift CV1 Tracker " + std::to_string(objectIndex);
 }
 
 vr::EVRInitError OculusToSteamVR_Driver::VRTracker::Activate(uint32_t objectID)
@@ -48,6 +59,7 @@ vr::EVRInitError OculusToSteamVR_Driver::VRTracker::Activate(uint32_t objectID)
     return vr::VRInitError_None;
 }
 
+//Ideally I would pass different data to be used in the update methods but this will have to do for now.
 void OculusToSteamVR_Driver::VRTracker::RunFrame(SOculusData* oculusData)
 {
     if (!enabled || objectID == vr::k_unTrackedDeviceIndexInvalid)
@@ -121,6 +133,10 @@ void OculusToSteamVR_Driver::VRTracker::RunFrame(SOculusData* oculusData)
 	pose.qDriverFromHeadRotation.x = 0;
 	pose.qDriverFromHeadRotation.y = 0;
 	pose.qDriverFromHeadRotation.z = 0;
+    
+    pose.vecVelocity[0] = ovrPose.LinearVelocity.x;
+    pose.vecVelocity[1] = ovrPose.LinearVelocity.y;
+    pose.vecVelocity[2] = ovrPose.LinearVelocity.z;
 
 	pose.poseTimeOffset = 0; //Let's let Oculus do it.
 
@@ -134,9 +150,4 @@ void OculusToSteamVR_Driver::VRTracker::RunFrame(SOculusData* oculusData)
 
     vr::VRServerDriverHost()->TrackedDevicePoseUpdated(objectID, pose, sizeof(vr::DriverPose_t));
     lastPose = pose;
-}
-
-void OculusToSteamVR_Driver::VRTracker::UseOVRControllerData(bool useOVRControllerData)
-{
-    this->useOVRControllerData = useOVRControllerData;
 }

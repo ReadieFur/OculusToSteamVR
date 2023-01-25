@@ -13,12 +13,15 @@ public:
 	static void Main(int argc, char** argsv);
 
 private:
-	static const std::chrono::duration<double> FRAME_DURATION;
+	static const std::chrono::duration<double> FRAME_INTERVAL;
+	static const std::chrono::duration<double> UDP_INTERVAL;
+	static const std::chrono::duration<double> LOG_INTERVAL;
 
 	static bool initialized;
-	static int udpSendRate;
 	//Possibly change this so that the value is calculated at runtime.
 	static float addedPredictionTimeMS;
+	static std::chrono::steady_clock::time_point lastSendTime;
+	static std::chrono::steady_clock::time_point lastLogTime;
 	static DataSender* dataSender;
 
 	OculusToSteamVRClient();

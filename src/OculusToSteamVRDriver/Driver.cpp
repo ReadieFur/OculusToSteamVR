@@ -25,13 +25,9 @@ vr::EVRInitError OculusToSteamVR_Driver::Driver::Init(vr::IVRDriverContext* pDri
 		return vr::VRInitError_IPC_Failed;
 
 	//The following devices will always (or should always) be present.
-	//AddDevice(std::make_shared<VRTracker>(0)); //HMD (0).
+	//AddDevice(std::make_shared<VRTracker>(HMD_OFFSET)); //HMD (0).
 	for (int i = 0; i < 2; i++)
-	{
-		std::shared_ptr<VRTracker> controllerTrackerDevice = std::make_shared<VRTracker>(i + 1);
-		controllerTrackerDevice->UseOVRControllerData(true);
-		AddDevice(controllerTrackerDevice);
-	}
+		AddDevice(std::make_shared<VRTracker>(CONTROLLERS_OFFSET + i));
 
 	return vr::VRInitError_None;
 }
@@ -70,7 +66,6 @@ void OculusToSteamVR_Driver::Driver::RunFrame()
 	lastOculusData = oculusData;
 
 #ifdef _DEBUG
-	frameCount++;
 	DebugLog();
 #endif
 }
@@ -111,10 +106,11 @@ OculusToSteamVR_Driver::Driver::RefreshDevices(unsigned int lastDeviceCount, uns
 #ifdef _DEBUG
 #include <string>
 
+const std::chrono::duration<double> OculusToSteamVR_Driver::Driver::LOG_INTERVAL = std::chrono::seconds(5);
+
 void OculusToSteamVR_Driver::Driver::DebugLog()
 {
-	//Log every 5 seconds (at 90fps).
-	if (frameCount % 450 == 0)
+	if (std::chrono::high_resolution_clock::now() - lastLogTime >= LOG_INTERVAL)
 	{
 		std::string message = "OVR UDP data:\n";
 		
@@ -170,6 +166,8 @@ void OculusToSteamVR_Driver::Driver::DebugLog()
 		message += "\n";
 		
 		vr::VRDriverLog()->Log(message.c_str());
+
+		lastLogTime = std::chrono::high_resolution_clock::now();
 	}
 }
 

@@ -2,11 +2,11 @@
 
 #include "SharedVRProperties.h"
 
-OculusToSteamVR_Driver::VRSensor::VRSensor(unsigned int ovrObjectIndex)
+OculusToSteamVR_Driver::VRSensor::VRSensor(unsigned int objectIndex)
 {
-    ovrSensorOffset = ovrObjectIndex - SENSORS_OFFSET;
-    serialNumber = "OSR-0000000" + std::to_string(ovrObjectIndex + 5);
-    modelNumber = "Oculus Rift CV1 Sensor " + std::to_string(ovrObjectIndex);
+    ovrSensorOffset = objectIndex - (SENSORS_OFFSET);
+    serialNumber = "ORS-0000000" + std::to_string(objectIndex + 5);
+    modelNumber = "Oculus Rift CV1 Sensor " + std::to_string(objectIndex);
 }
 
 vr::EVRInitError OculusToSteamVR_Driver::VRSensor::Activate(uint32_t objectID)
@@ -52,14 +52,14 @@ void OculusToSteamVR_Driver::VRSensor::RunFrame(SOculusData* oculusData)
 	else
 		pose.result = vr::TrackingResult_Running_OK;
 
-	pose.qRotation.w = ovrPose.Pose.Orientation.w;
-	pose.qRotation.x = ovrPose.Pose.Orientation.x;
-	pose.qRotation.y = ovrPose.Pose.Orientation.y;
-	pose.qRotation.z = ovrPose.Pose.Orientation.z;
+	pose.qRotation.w = ovrPose.LeveledPose.Orientation.w;
+	pose.qRotation.x = ovrPose.LeveledPose.Orientation.x;
+	pose.qRotation.y = ovrPose.LeveledPose.Orientation.y;
+	pose.qRotation.z = ovrPose.LeveledPose.Orientation.z;
 
-	pose.vecPosition[0] = ovrPose.Pose.Position.x;
-	pose.vecPosition[1] = ovrPose.Pose.Position.y;
-	pose.vecPosition[2] = ovrPose.Pose.Position.z;
+	pose.vecPosition[0] = ovrPose.LeveledPose.Position.x;
+	pose.vecPosition[1] = ovrPose.LeveledPose.Position.y;
+	pose.vecPosition[2] = ovrPose.LeveledPose.Position.z;
 
 	pose.qWorldFromDriverRotation.w = 1;
 	pose.qWorldFromDriverRotation.x = 0;

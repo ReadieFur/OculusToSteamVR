@@ -11,7 +11,7 @@ namespace OculusToSteamVR_Driver
 	{
 	public:
 #pragma region IVRDevice
-		VRSensor(unsigned int ovrObjectIndex);
+		VRSensor(unsigned int objectIndex);
 		virtual vr::EVRInitError Activate(uint32_t objectId) override;
 		virtual vr::ETrackedDeviceClass GetDeviceType() override { return vr::ETrackedDeviceClass::TrackedDeviceClass_TrackingReference; }
 		virtual void RunFrame(SOculusData* oculusData) override;

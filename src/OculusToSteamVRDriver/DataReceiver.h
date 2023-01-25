@@ -27,8 +27,6 @@ namespace OculusToSteamVR_Driver
 		SOculusData TryGetData(int timeoutMS, bool* timedOut);
 
 	private:
-		const int interval = 90;
-
 		bool initSuccess = false;
 		bool dispose = true;
 		bool connected = false;
