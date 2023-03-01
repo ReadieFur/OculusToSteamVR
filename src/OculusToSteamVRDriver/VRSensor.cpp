@@ -18,7 +18,7 @@ vr::EVRInitError OculusToSteamVR_Driver::VRSensor::Activate(uint32_t objectID)
     SharedVRProperties::SetCommonProperties(properties, modelNumber, serialNumber);
 
     vr::VRProperties()->SetStringProperty(properties, vr::Prop_ModelNumber_String, "Oculus CV1 Sensor");
-    
+
     vr::VRProperties()->SetStringProperty(properties, vr::Prop_RenderModelName_String, "rift_camera");
 
     vr::VRProperties()->SetStringProperty(properties, vr::Prop_NamedIconPathDeviceReady_String, "{oculus}/icons/cv1_camera_ready.png");
@@ -69,10 +69,18 @@ void OculusToSteamVR_Driver::VRSensor::RunFrame(SOculusData* oculusData)
 	pose.qWorldFromDriverRotation.y = 0;
 	pose.qWorldFromDriverRotation.z = 0;
 
+	pose.vecWorldFromDriverTranslation[0] = 0;
+	pose.vecWorldFromDriverTranslation[1] = 0;
+	pose.vecWorldFromDriverTranslation[2] = 0;
+
 	pose.qDriverFromHeadRotation.w = 1;
     pose.qDriverFromHeadRotation.x = 0;
 	pose.qDriverFromHeadRotation.y = 0;
 	pose.qDriverFromHeadRotation.z = 0;
+
+	pose.vecDriverFromHeadTranslation[0] = 0;
+	pose.vecDriverFromHeadTranslation[1] = 0;
+	pose.vecDriverFromHeadTranslation[2] = 0;
 
 	vr::VRServerDriverHost()->TrackedDevicePoseUpdated(objectID, pose, sizeof(vr::DriverPose_t));
 	lastPose = pose;

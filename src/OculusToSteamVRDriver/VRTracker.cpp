@@ -131,10 +131,18 @@ void OculusToSteamVR_Driver::VRTracker::RunFrame(SOculusData* oculusData)
 	pose.qWorldFromDriverRotation.y = 0;
 	pose.qWorldFromDriverRotation.z = 0;
 
+    pose.vecWorldFromDriverTranslation[0] = 0;
+    pose.vecWorldFromDriverTranslation[1] = 0;
+    pose.vecWorldFromDriverTranslation[2] = 0;
+
 	pose.qDriverFromHeadRotation.w = 1;
 	pose.qDriverFromHeadRotation.x = 0;
 	pose.qDriverFromHeadRotation.y = 0;
 	pose.qDriverFromHeadRotation.z = 0;
+
+    pose.vecDriverFromHeadTranslation[0] = 0;
+    pose.vecDriverFromHeadTranslation[1] = 0;
+    pose.vecDriverFromHeadTranslation[2] = 0;
     
     pose.vecVelocity[0] = ovrPose.LinearVelocity.x;
     pose.vecVelocity[1] = ovrPose.LinearVelocity.y;
