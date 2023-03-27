@@ -108,12 +108,12 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>O:\GitHub\ReadieFur\OculusToSteamVR\src\libraries\openvr\headers;..\libraries\openvr\headers;..\libraries\LibOVR\Include;O:\GitHub\ReadieFur\OculusToSteamVR\src\libraries\LibOVR\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>O:\GitHub\ReadieFur\OculusToSteamVR\src\libraries\openvr\headers;O:\GitHub\ReadieFur\OculusToSteamVR\src\libraries\LibOVR\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>..\libraries\LibOVR\Lib\Windows\x64\Release\VS2017\LibOVR.lib</AdditionalDependencies>
+      <AdditionalDependencies>O:\GitHub\ReadieFur\OculusToSteamVR\src\libraries\LibOVR\Lib\Windows\x64\Release\VS2017\LibOVR.lib</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
       <Command>if not exist "$(OutputPath)$(ProjectName)" mkdir "$(OutputPath)$(ProjectName)"
@@ -134,14 +134,14 @@ copy /Y "$(SolutionDir)driver.vrdrivermanifest" "$(OutputPath)$(ProjectName)\dri
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>O:\GitHub\ReadieFur\OculusToSteamVR\src\libraries\openvr\headers;..\libraries\openvr\headers;..\libraries\LibOVR\Include;O:\GitHub\ReadieFur\OculusToSteamVR\src\libraries\LibOVR\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>O:\GitHub\ReadieFur\OculusToSteamVR\src\libraries\openvr\headers;O:\GitHub\ReadieFur\OculusToSteamVR\src\libraries\LibOVR\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>..\libraries\LibOVR\Lib\Windows\x64\Release\VS2017\LibOVR.lib</AdditionalDependencies>
+      <AdditionalDependencies>O:\GitHub\ReadieFur\OculusToSteamVR\src\libraries\LibOVR\Lib\Windows\x64\Release\VS2017\LibOVR.lib</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
       <Command>if not exist "$(OutputPath)$(ProjectName)" mkdir "$(OutputPath)$(ProjectName)"
