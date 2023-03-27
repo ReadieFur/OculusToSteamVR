@@ -1,3 +1,5 @@
+#define _WINSOCK_DEPRECATED_NO_WARNINGS
+
 #include "DataSender.h"
 
 #include <iostream>
@@ -35,7 +37,8 @@ DataSender::DataSender(int port)
 
     //Fill in the address structure.
     broadcastAddr.sin_family = AF_INET;
-    broadcastAddr.sin_addr.s_addr = INADDR_BROADCAST;
+    //broadcastAddr.sin_addr.s_addr = INADDR_BROADCAST;
+    broadcastAddr.sin_addr.s_addr = inet_addr("192.168.1.163");
     broadcastAddr.sin_port = htons(port);
 }
 
