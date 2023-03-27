@@ -15,6 +15,9 @@
 #include <Windows.h>
 #include <mutex>
 #include <thread>
+#include <chrono>
+
+#include "DataReceiver.h"
 
 //#define MAX_HAPTICS
 
@@ -51,7 +54,6 @@ uint8_t future_vib_buffer[2][1024] = { {0},{0} };
 bool future_vib_buffer_used[2][1024] = { {0},{0} };
 uint8_t future_vib_buffer_freq[2][1024] = { {0},{0} };
 uint8_t future_vib_buffer_freq_sample[2][1024] = { {0},{0} };
-
 
 void vibration_thread(ovrSession mSession);
 void add_vibration(bool isRightHand, float amplitude, float frequency, float duration);
@@ -469,6 +471,56 @@ void no_graphics_start(shared_buffer* comm_buffer, HANDLE comm_mutex) {
 }
 
 
+void DoUDPLoop(shared_buffer* comm_buffer, HANDLE comm_mutex)
+{
+    OculusToSteamVR_Driver::DataReceiver dataReceiver(1549); //O(15) D(4) S(19) - OculusDataStreamer.
+    if (!dataReceiver.WasInitSuccess())
+    {
+        std::cout << "Could not initialize UDP receiver" << std::endl;
+        dataReceiver.~DataReceiver();
+    }
+    
+    const int fps = 90;
+    const std::chrono::duration sleepTime = std::chrono::milliseconds(1000 / fps);
+    std::chrono::steady_clock::time_point lastFrameTime = std::chrono::steady_clock::now();
+
+    uint64_t frameCount = 0;
+
+    //while (dataReceiver.IsConnected())
+    while (true)
+    {
+        std::chrono::steady_clock::time_point now = std::chrono::steady_clock::now();
+        std::chrono::duration frameTime = now - lastFrameTime;
+        if (frameTime < sleepTime)
+			std::this_thread::sleep_for(sleepTime - frameTime);
+
+        WaitForSingleObject(comm_mutex, INFINITE);
+        
+        bool timedOut = true;
+        SOculusData oculusData;
+        dataReceiver.TryGetData(sleepTime.count(), &oculusData, &timedOut);
+
+        if (!timedOut)
+        {
+            comm_buffer->input_state = oculusData.inputState;
+            comm_buffer->tracking_state = oculusData.trackingState;
+            comm_buffer->num_objects = oculusData.objectCount;
+            for (int i = 0; i < oculusData.objectCount; i++)
+				comm_buffer->object_poses[i] = oculusData.objectPoses[i];
+        }
+
+        if ((frameCount & 0x7FF) == 0)
+            std::cout << (timedOut ? "Timed out" : "Received data") << std::endl;
+
+        ReleaseMutex(comm_mutex);
+        lastFrameTime = now;
+        frameCount++;
+    }
+
+    dataReceiver.~DataReceiver();
+}
+
+
 int main(int argc, char** argsv)
 {
     std::cout << "Welcome to oculus_touch_link, this program provides the input and haptic link to the stream driver, as well as passing confuguration data" << std::endl;
@@ -568,14 +620,18 @@ int main(int argc, char** argsv)
     ReleaseMutex(comm_mutex);
 
 
-    if (do_rendering) {
+    /*if (do_rendering) {
         GuardianSystemDemo* instance = new (_aligned_malloc(sizeof(GuardianSystemDemo), 16)) GuardianSystemDemo();
         instance->Start(0, comm_buffer, comm_mutex);
         delete instance;
 
     } else {
         no_graphics_start(comm_buffer, comm_mutex);
-    }
+    }*/
+
+    //Use UDP stream instead.
+    DoUDPLoop(comm_buffer, comm_mutex);
+
      UnmapViewOfFile(comm_buffer);
 
      CloseHandle(hMapFile);
